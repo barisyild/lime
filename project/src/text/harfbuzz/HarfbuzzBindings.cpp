@@ -106,9 +106,27 @@ namespace lime {
 	}
 
 
+	// Note: `data` may point into Haxe GC-managed memory (e.g. a Bytes buffer),
+	// which a moving/compacting collector can relocate or free while the blob is
+	// still alive. Copy into a buffer the blob owns so it never references
+	// movable memory; the destroy callback frees the copy. `memoryMode` is
+	// intentionally ignored — owning the copy is the only safe option here.
 	value lime_hb_blob_create (double data, int length, int memoryMode) {
 
-		hb_blob_t* blob = hb_blob_create ((const char*)(uintptr_t)data, length, (hb_memory_mode_t)memoryMode, 0, 0);
+		hb_blob_t* blob;
+
+		if (data && length > 0) {
+
+			unsigned char* copy = (unsigned char*)malloc (length);
+			memcpy (copy, (const void*)(uintptr_t)data, length);
+			blob = hb_blob_create ((const char*)copy, length, HB_MEMORY_MODE_WRITABLE, copy, (hb_destroy_func_t)free);
+
+		} else {
+
+			blob = hb_blob_create (0, 0, (hb_memory_mode_t)memoryMode, 0, 0);
+
+		}
+
 		return CFFIPointer (blob, gc_hb_blob);
 
 	}
@@ -116,7 +134,20 @@ namespace lime {
 
 	HL_PRIM HL_CFFIPointer* HL_NAME(hl_hb_blob_create) (double data, int length, int memoryMode) {
 
-		hb_blob_t* blob = hb_blob_create ((const char*)(uintptr_t)data, length, (hb_memory_mode_t)memoryMode, 0, 0);
+		hb_blob_t* blob;
+
+		if (data && length > 0) {
+
+			unsigned char* copy = (unsigned char*)malloc (length);
+			memcpy (copy, (const void*)(uintptr_t)data, length);
+			blob = hb_blob_create ((const char*)copy, length, HB_MEMORY_MODE_WRITABLE, copy, (hb_destroy_func_t)free);
+
+		} else {
+
+			blob = hb_blob_create (0, 0, (hb_memory_mode_t)memoryMode, 0, 0);
+
+		}
+
 		return HLCFFIPointer (blob, (hl_finalizer)hl_gc_hb_blob);
 
 	}
