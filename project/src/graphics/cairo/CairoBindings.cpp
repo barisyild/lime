@@ -634,21 +634,8 @@ namespace lime {
 
 		cairo_font_face_t* face = cairo_get_font_face ((cairo_t*)val_data (handle));
 
-		if (cairoObjects.find (face) != cairoObjects.end ()) {
-
-			return (value)cairoObjects[face];
-
-		} else {
-
-			cairo_font_face_reference (face);
-
-			value object = CFFIPointer (face, gc_cairo_font_face);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[face] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_font_face_reference (face);
+		return CFFIPointer (face, gc_cairo_font_face);
 
 	}
 
@@ -657,21 +644,8 @@ namespace lime {
 
 		cairo_font_face_t* face = cairo_get_font_face ((cairo_t*)handle->ptr);
 
-		if (cairoObjects.find (face) != cairoObjects.end ()) {
-
-			return (HL_CFFIPointer*)cairoObjects[face];
-
-		} else {
-
-			cairo_font_face_reference (face);
-
-			HL_CFFIPointer* object = HLCFFIPointer (face, (hl_finalizer)hl_gc_cairo_font_face);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[face] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_font_face_reference (face);
+		return HLCFFIPointer (face, (hl_finalizer)hl_gc_cairo_font_face);
 
 	}
 
@@ -698,21 +672,8 @@ namespace lime {
 
 		cairo_surface_t* surface = cairo_get_group_target ((cairo_t*)val_data (handle));
 
-		if (cairoObjects.find (surface) != cairoObjects.end ()) {
-
-			return (value)cairoObjects[surface];
-
-		} else {
-
-			cairo_surface_reference (surface);
-
-			value object = CFFIPointer (surface, gc_cairo_surface);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[surface] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_surface_reference (surface);
+		return CFFIPointer (surface, gc_cairo_surface);
 
 	}
 
@@ -721,21 +682,8 @@ namespace lime {
 
 		cairo_surface_t* surface = cairo_get_group_target ((cairo_t*)handle->ptr);
 
-		if (cairoObjects.find (surface) != cairoObjects.end ()) {
-
-			return (HL_CFFIPointer*)cairoObjects[surface];
-
-		} else {
-
-			cairo_surface_reference (surface);
-
-			HL_CFFIPointer* object = HLCFFIPointer (surface, (hl_finalizer)hl_gc_cairo_surface);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[surface] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_surface_reference (surface);
+		return HLCFFIPointer (surface, (hl_finalizer)hl_gc_cairo_surface);
 
 	}
 
@@ -840,21 +788,8 @@ namespace lime {
 
 		cairo_pattern_t* pattern = cairo_get_source ((cairo_t*)val_data (handle));
 
-		if (cairoObjects.find (pattern) != cairoObjects.end ()) {
-
-			return (value)cairoObjects[pattern];
-
-		} else {
-
-			cairo_pattern_reference (pattern);
-
-			value object = CFFIPointer (pattern, gc_cairo_pattern);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[pattern] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_pattern_reference (pattern);
+		return CFFIPointer (pattern, gc_cairo_pattern);
 
 	}
 
@@ -863,21 +798,8 @@ namespace lime {
 
 		cairo_pattern_t* pattern = cairo_get_source ((cairo_t*)handle->ptr);
 
-		if (cairoObjects.find (pattern) != cairoObjects.end ()) {
-
-			return (HL_CFFIPointer*)cairoObjects[pattern];
-
-		} else {
-
-			cairo_pattern_reference (pattern);
-
-			HL_CFFIPointer* object = HLCFFIPointer (pattern, (hl_finalizer)hl_gc_cairo_pattern);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[pattern] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_pattern_reference (pattern);
+		return HLCFFIPointer (pattern, (hl_finalizer)hl_gc_cairo_pattern);
 
 	}
 
@@ -886,21 +808,8 @@ namespace lime {
 
 		cairo_surface_t* surface = cairo_get_target ((cairo_t*)val_data (handle));
 
-		if (cairoObjects.find (surface) != cairoObjects.end ()) {
-
-			return (value)cairoObjects[surface];
-
-		} else {
-
-			cairo_surface_reference (surface);
-
-			value object = CFFIPointer (surface, gc_cairo_surface);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[surface] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_surface_reference (surface);
+		return CFFIPointer (surface, gc_cairo_surface);
 
 	}
 
@@ -909,21 +818,8 @@ namespace lime {
 
 		cairo_surface_t* surface = cairo_get_target ((cairo_t*)handle->ptr);
 
-		if (cairoObjects.find (surface) != cairoObjects.end ()) {
-
-			return (HL_CFFIPointer*)cairoObjects[surface];
-
-		} else {
-
-			cairo_surface_reference (surface);
-
-			HL_CFFIPointer* object = HLCFFIPointer (surface, (hl_finalizer)hl_gc_cairo_surface);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[surface] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_surface_reference (surface);
+		return HLCFFIPointer (surface, (hl_finalizer)hl_gc_cairo_surface);
 
 	}
 
@@ -1518,21 +1414,8 @@ namespace lime {
 
 		cairo_pattern_t* pattern = cairo_pop_group ((cairo_t*)val_data (handle));
 
-		if (cairoObjects.find (pattern) != cairoObjects.end ()) {
-
-			return (value)cairoObjects[pattern];
-
-		} else {
-
-			cairo_pattern_reference (pattern);
-
-			value object = CFFIPointer (pattern, gc_cairo_pattern);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[pattern] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_pattern_reference (pattern);
+		return CFFIPointer (pattern, gc_cairo_pattern);
 
 	}
 
@@ -1541,21 +1424,8 @@ namespace lime {
 
 		cairo_pattern_t* pattern = cairo_pop_group ((cairo_t*)handle->ptr);
 
-		if (cairoObjects.find (pattern) != cairoObjects.end ()) {
-
-			return (HL_CFFIPointer*)cairoObjects[pattern];
-
-		} else {
-
-			cairo_pattern_reference (pattern);
-
-			HL_CFFIPointer* object = HLCFFIPointer (pattern, (hl_finalizer)hl_gc_cairo_pattern);
-			cairoObjects_Mutex.Lock ();
-			cairoObjects[pattern] = object;
-			cairoObjects_Mutex.Unlock ();
-			return object;
-
-		}
+		cairo_pattern_reference (pattern);
+		return HLCFFIPointer (pattern, (hl_finalizer)hl_gc_cairo_pattern);
 
 	}
 
