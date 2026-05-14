@@ -81,6 +81,9 @@ namespace lime {
 
 	static int VorbisFile_BufferClose (VorbisFile_Buffer* src) {
 
+		// VorbisFile::FromBytes gives this buffer an owned malloc'd copy of the
+		// audio data; free it here when libvorbis closes the stream.
+		free (src->data);
 		delete src;
 		return 0;
 
@@ -147,13 +150,19 @@ namespace lime {
 		OggVorbis_File* vorbisFile = new OggVorbis_File;
 		memset (vorbisFile, 0, sizeof (OggVorbis_File));
 
+		// `bytes->b` points into Haxe GC-managed memory, which a moving collector
+		// can relocate or free while the OggVorbis_File is still streaming. Copy
+		// into a buffer this VorbisFile_Buffer owns; VorbisFile_BufferClose (and
+		// the error path below) free it.
 		VorbisFile_Buffer* buffer = new VorbisFile_Buffer ();
-		buffer->data = bytes->b;
 		buffer->size = bytes->length;
 		buffer->pos = 0;
+		buffer->data = (unsigned char*)malloc (bytes->length);
+		memcpy (buffer->data, bytes->b, bytes->length);
 
 		if (ov_open_callbacks (buffer, vorbisFile, NULL, 0, VORBIS_FILE_BUFFER_CALLBACKS) != 0) {
 
+			free (buffer->data);
 			delete buffer;
 			delete vorbisFile;
 			return 0;
