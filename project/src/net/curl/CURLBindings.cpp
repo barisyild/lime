@@ -77,23 +77,24 @@ namespace lime {
 
 			curl_gc_mutex.Lock ();
 
-			if (curlMultiReferences.find (handle) != curlMultiReferences.end ()) {
+			if (curlMultiReferences.find (val_data (handle)) != curlMultiReferences.end ()) {
 
-				value multi_handle = (value)curlMultiReferences[handle];
-				curl_multi_remove_handle ((CURLM*)val_data (multi_handle), (CURL*)val_data (handle));
-				curlMultiReferences.erase (handle);
+				CURLM* multi = (CURLM*)curlMultiReferences[val_data (handle)];
+				curl_multi_remove_handle (multi, (CURL*)val_data (handle));
+				curlMultiReferences.erase (val_data (handle));
 
-				std::vector<void*>* handles = curlMultiHandles[multi_handle];
+				std::vector<void*>* handles = curlMultiHandles[multi];
 
 				if (handles->size () > 0) {
 
 					for (std::vector<void*>::iterator it = handles->begin (); it != handles->end (); ++it) {
 
-						if (*it == handle) {
+						if (((ValuePointer*)*it)->Get () == handle) {
 
+							delete (ValuePointer*)*it;
 							handles->erase (it);
-							delete curlMultiObjects[handle];
-							curlMultiObjects.erase (handle);
+							delete curlMultiObjects[val_data (handle)];
+							curlMultiObjects.erase (val_data (handle));
 							break;
 
 						}
@@ -343,28 +344,34 @@ namespace lime {
 
 			curl_gc_mutex.Lock ();
 
-			if (curlMultiValid.find (handle) != curlMultiValid.end ()) {
+			if (curlMultiValid.find (val_data (handle)) != curlMultiValid.end ()) {
 
-				curlMultiValid.erase (handle);
+				curlMultiValid.erase (val_data (handle));
 				curl_multi_cleanup ((CURLM*)val_data(handle));
 
 			}
 
-			std::vector<void*>* handles = curlMultiHandles[handle];
+			std::vector<void*>* handles = curlMultiHandles[val_data (handle)];
 
 			for (std::vector<void*>::iterator it = handles->begin (); it != handles->end (); ++it) {
 
-				delete curlMultiObjects[*it];
-				curlMultiObjects.erase (*it);
+				ValuePointer* curlHandleRef = (ValuePointer*)*it;
+				value curl_handle = (value)curlHandleRef->Get ();
+				void* curl = val_data (curl_handle);
+
+				delete curlMultiObjects[curl];
+				curlMultiObjects.erase (curl);
+				curlMultiReferences.erase (curl);
+				delete curlHandleRef;
 
 				curl_gc_mutex.Unlock ();
-				gc_curl ((value)*it);
+				gc_curl (curl_handle);
 				curl_gc_mutex.Lock ();
 
 			}
 
-			delete curlMultiHandles[handle];
-			curlMultiHandles.erase (handle);
+			delete handles;
+			curlMultiHandles.erase (val_data (handle));
 
 			val_gc (handle, 0);
 			//handle = alloc_null ();
@@ -382,9 +389,9 @@ namespace lime {
 
 			curl_gc_mutex.Lock ();
 
-			if (curlMultiValid.find (handle) != curlMultiValid.end ()) {
+			if (curlMultiValid.find (handle->ptr) != curlMultiValid.end ()) {
 
-				curlMultiValid.erase (handle);
+				curlMultiValid.erase (handle->ptr);
 				curl_multi_cleanup ((CURLM*)handle->ptr);
 
 			}
@@ -2359,15 +2366,15 @@ namespace lime {
 
 		value handle = CFFIPointer (curl_multi_init (), gc_curl_multi);
 
-		if (curlMultiValid.find (handle) != curlMultiValid.end ()) {
+		if (curlMultiValid.find (val_data (handle)) != curlMultiValid.end ()) {
 
 			printf ("Error: Duplicate cURL Multi handle\n");
 
 		}
 
-		curlMultiValid[handle] = true;
+		curlMultiValid[val_data (handle)] = true;
 		curlMultiRunningHandles[handle] = 0;
-		curlMultiHandles[handle] = new std::vector<void*> ();
+		curlMultiHandles[val_data (handle)] = new std::vector<void*> ();
 
 		curl_gc_mutex.Unlock ();
 
@@ -2382,13 +2389,13 @@ namespace lime {
 
 		HL_CFFIPointer* handle = HLCFFIPointer (curl_multi_init (), (hl_finalizer)hl_gc_curl_multi);
 
-		if (curlMultiValid.find (handle) != curlMultiValid.end ()) {
+		if (curlMultiValid.find (handle->ptr) != curlMultiValid.end ()) {
 
 			printf ("Error: Duplicate cURL Multi handle\n");
 
 		}
 
-		curlMultiValid[handle] = true;
+		curlMultiValid[handle->ptr] = true;
 		curlMultiRunningHandles[handle] = 0;
 		curlMultiHandles[handle] = new std::vector<void*> ();
 
@@ -2407,9 +2414,9 @@ namespace lime {
 
 		if (result == CURLM_OK) {
 
-			curlMultiReferences[curl_handle] = multi_handle;
-			curlMultiHandles[multi_handle]->push_back (curl_handle);
-			curlMultiObjects[curl_handle] = new ValuePointer (curl_object);
+			curlMultiReferences[val_data (curl_handle)] = val_data (multi_handle);
+			curlMultiHandles[val_data (multi_handle)]->push_back (new ValuePointer (curl_handle));
+			curlMultiObjects[val_data (curl_handle)] = new ValuePointer (curl_object);
 
 		}
 
@@ -2469,10 +2476,9 @@ namespace lime {
 			CURL* curl = msg->easy_handle;
 			value result = alloc_empty_object ();
 
-			if (curlObjects.find (curl) != curlObjects.end ()) {
+			if (curlMultiObjects.find (curl) != curlMultiObjects.end ()) {
 
-				value handle = (value)curlObjects[curl];
-				alloc_field (result, id_curl, (value)curlMultiObjects[handle]->Get ());
+				alloc_field (result, id_curl, (value)curlMultiObjects[curl]->Get ());
 
 			} else {
 
@@ -2537,12 +2543,12 @@ namespace lime {
 		int runningHandles = 0;
 		CURLMcode result = curl_multi_perform ((CURLM*)val_data (multi_handle), &runningHandles);
 
-		std::vector<void*>* handles = curlMultiHandles[multi_handle];
+		std::vector<void*>* handles = curlMultiHandles[val_data (multi_handle)];
 
 		for (std::vector<void*>::iterator it = handles->begin (); it != handles->end (); ++it) {
 
 			curl_gc_mutex.Unlock ();
-			lime_curl_easy_flush ((value)*it);
+			lime_curl_easy_flush ((value) ((ValuePointer*)*it)->Get ());
 			curl_gc_mutex.Lock ();
 
 		}
@@ -2588,23 +2594,24 @@ namespace lime {
 
 		CURLMcode result = curl_multi_remove_handle ((CURLM*)val_data (multi_handle), (CURL*)val_data (curl_handle));
 
-		if (/*result == CURLM_OK &&*/ curlMultiReferences.find (curl_handle) != curlMultiReferences.end ()) {
+		if (/*result == CURLM_OK &&*/ curlMultiReferences.find (val_data (curl_handle)) != curlMultiReferences.end ()) {
 
-			curlMultiReferences.erase (curl_handle);
+			curlMultiReferences.erase (val_data (curl_handle));
 
 		}
 
-		std::vector<void*>* handles = curlMultiHandles[multi_handle];
+		std::vector<void*>* handles = curlMultiHandles[val_data (multi_handle)];
 
 		if (handles->size () > 0) {
 
 			for (std::vector<void*>::iterator it = handles->begin (); it != handles->end (); ++it) {
 
-				if (*it == curl_handle) {
+				if (((ValuePointer*)*it)->Get () == curl_handle) {
 
+					delete (ValuePointer*)*it;
 					handles->erase (it);
-					delete curlMultiObjects[curl_handle];
-					curlMultiObjects.erase (curl_handle);
+					delete curlMultiObjects[val_data (curl_handle)];
+					curlMultiObjects.erase (val_data (curl_handle));
 					break;
 
 				}
