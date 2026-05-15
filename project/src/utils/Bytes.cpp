@@ -272,7 +272,15 @@ namespace lime {
 
 				if (val_is_null (_buffer) || (char*)b != buffer_data (val_to_buffer (_buffer))) {
 
-					buffer bufferValue = alloc_buffer_len (length);
+					// Pad small writebacks to >=4096B so the backing Array<UInt8>'s element
+					// store lands in hxcpp's large-object pool (>= IMMIX_LARGE_OBJ_SIZE =
+					// 4000), where it is never relocated by the moving GC. Native code that
+					// holds a raw pointer into the buffer (e.g. a cairo surface created over
+					// an ImageBuffer's pixels) then survives a GC compaction. The Haxe
+					// Bytes.length is unchanged (still `length`); only the backing Array's
+					// physical capacity is padded, and the trailing bytes are never read.
+					int allocSize = (length < 4096) ? 4096 : length;
+					buffer bufferValue = alloc_buffer_len (allocSize);
 					_buffer = buffer_val (bufferValue);
 					memcpy ((unsigned char*)buffer_data (bufferValue), b, length);
 					alloc_field (bytes, id_b, _buffer);
