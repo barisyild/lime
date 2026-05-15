@@ -108,13 +108,52 @@ class ImageBuffer
 	**/
 	public function new(data:UInt8Array = null, width:Int = 0, height:Int = 0, bitsPerPixel:Int = 32, format:PixelFormat = null)
 	{
-		this.data = data;
+		this.data = __stabilize(data);
 		this.width = width;
 		this.height = height;
 		this.bitsPerPixel = bitsPerPixel;
 		this.format = (format == null ? RGBA32 : format);
 		premultiplied = false;
 		transparent = true;
+	}
+
+	/**
+		Under hxcpp's moving GC, allocations smaller than IMMIX_LARGE_OBJ_SIZE
+		(4000 bytes) live in the small-object pool and can be relocated. A native
+		cairo surface created over an `ImageBuffer`'s pixels holds a raw pointer
+		to that backing memory; when the buffer is small it can move out from
+		under cairo, leaving pixman to crash on stale src/dst rows in a composite
+		(e.g. drawing a small BitmapData scaled).
+
+		This stabilises small pixel buffers by allocating the underlying
+		`Array<cpp.UInt8>` at >=4096 physical capacity — landing the element
+		store in the large-object pool, where it is never moved — while keeping
+		every reported `.length` (Bytes.length, ArrayBuffer.byteLength,
+		UInt8Array.byteLength) equal to the real image size. This preserves the
+		invariant lime's C++ marshaling depends on (ArrayBuffer.length ==
+		byteLength); the padding bytes past `realLen` are never read, since every
+		consumer is bounded by the logical length. No-op off hxcpp.
+
+		Covers Haxe-side-created ImageBuffers (`new()` + `clone()`). It does NOT
+		cover an ImageBuffer whose `data` is replaced by a later C++
+		`Bytes::Resize` (e.g. images decoded by `lime_image_load_bytes`) — the
+		writeback path allocates a fresh `Array<cpp.UInt8>` sized to the image
+		and bypasses this padding.
+	**/
+	@:noCompletion private static function __stabilize(data:UInt8Array):UInt8Array
+	{
+		#if cpp
+		if (data == null) return data;
+		var realLen = data.byteLength;
+		if (realLen >= 4096 || realLen == 0) return data;
+		var store:haxe.io.BytesData = new haxe.io.BytesData();
+		cpp.NativeArray.setSize(store, 4096);
+		var bytes = @:privateAccess new haxe.io.Bytes(realLen, store);
+		bytes.blit(0, data.buffer, data.byteOffset, realLen);
+		return UInt8Array.fromBytes(bytes);
+		#else
+		return data;
+		#end
 	}
 
 	/**
@@ -172,7 +211,7 @@ class ImageBuffer
 		{
 			var bytes = Bytes.alloc(data.byteLength);
 			bytes.blit(0, buffer.data.buffer, 0, data.byteLength);
-			buffer.data = new UInt8Array(bytes);
+			buffer.data = __stabilize(new UInt8Array(bytes));
 		}
 		#end
 
