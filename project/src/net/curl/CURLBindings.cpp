@@ -1334,19 +1334,37 @@ namespace lime {
 
 	static size_t read_callback (void *buffer, size_t size, size_t nmemb, void *userp) {
 
-		Bytes* bytes = readBytes[userp];
+		// Re-read the source pointer fresh on every call: under HXCPP_GC_MOVING
+		// the backing Array<UInt8>'s mBase can be relocated between
+		// CURLOPT_READDATA setup and this callback (esp. small uploads, whose
+		// backing is in the movable small-object pool). The cached Bytes* in
+		// readBytes[userp] holds a stale b pointer. readBytesRoot[userp] keeps
+		// the Haxe value alive across compaction, so we re-read .length / .b
+		// directly off the rooted value and memcpy immediately — no GC safepoint
+		// can run on this thread between the read and the memcpy.
+		static int id_length_field = val_id ("length");
+		static int id_b_field = val_id ("b");
+
+		ValuePointer* root = readBytesRoot[userp];
+		if (!root) return CURL_READFUNC_ABORT;
+		value bytesValue = (value)root->Get ();
+		if (val_is_null (bytesValue)) return CURL_READFUNC_ABORT;
+
+		int bytesLength = val_int (val_field (bytesValue, id_length_field));
+		unsigned char* bytesB = (unsigned char*)buffer_data (val_to_buffer (val_field (bytesValue, id_b_field)));
+
 		int position = readBytesPosition[userp];
 		int length = size * nmemb;
 
-		if (bytes->length < position + length) {
+		if (bytesLength < position + length) {
 
-			length = bytes->length - position;
+			length = bytesLength - position;
 
 		}
 
 		if (length <= 0) return 0;
 
-		memcpy (buffer, bytes->b + position, length);
+		memcpy (buffer, bytesB + position, length);
 		readBytesPosition[userp] = position + length;
 
 		return length;
