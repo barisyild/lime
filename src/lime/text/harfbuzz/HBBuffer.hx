@@ -81,8 +81,12 @@ abstract HBBuffer(CFFIPointer) from CFFIPointer to CFFIPointer
 	public function getGlyphInfo():Array<HBGlyphInfo>
 	{
 		#if (lime_cffi && lime_harfbuzz && !macro)
+		#if jvm
+		var bytes = haxe.io.Bytes.ofData(lime.jni.Lime.lime_hb_buffer_get_glyph_infos_jvm(this));
+		#else
 		var bytes = Bytes.alloc(0);
 		bytes = NativeCFFI.lime_hb_buffer_get_glyph_infos(this, bytes);
+		#end
 
 		if (bytes == null)
 		{
@@ -117,8 +121,12 @@ abstract HBBuffer(CFFIPointer) from CFFIPointer to CFFIPointer
 	public function getGlyphPositions():Array<HBGlyphPosition>
 	{
 		#if (lime_cffi && lime_harfbuzz && !macro)
+		#if jvm
+		var bytes = haxe.io.Bytes.ofData(lime.jni.Lime.lime_hb_buffer_get_glyph_positions_jvm(this));
+		#else
 		var bytes = Bytes.alloc(0);
 		bytes = NativeCFFI.lime_hb_buffer_get_glyph_positions(this, bytes);
+		#end
 
 		if (bytes == null)
 		{

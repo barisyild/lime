@@ -394,6 +394,164 @@
 	<set name="LIBSUFFIX" value="${HX_TARGET_SUFFIX}" if="HX_TARGET_SUFFIX" />
 	<set name="LIBSUFFIX" value="${LIBEXTRA}" unless="LIBSUFFIX" />
 
+	<files id="limejvm-jni">
+		<compilerflag value="-std=c++11" unless="isMsvc" />
+		<compilerflag value="-Isrc/jni/include" /> <!-- shadows lime's hxcpp <system/CFFI.h> -->
+		<compilerflag value="-Iinclude" />
+		<compilerflag value="-I${JNI_HOME}/include" />
+		<compilerflag value="-I${JNI_HOME}/include/win32" if="windows" />
+		<compilerflag value="-I${JNI_HOME}/include/darwin" if="mac" />
+		<compilerflag value="-I${JNI_HOME}/include/linux" unless="windows || mac" />
+		<compilerflag value="-DLIMEJVM_CAIRO" if="limejvm_cairo" /> <!-- enables the cairo surface->byte[] sync in tex_image_2d_jvm -->
+		<compilerflag value="-DLIME_HARFBUZZ" if="limejvm_cairo" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/harfbuzz/src" if="limejvm_cairo" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/freetype/include" if="limejvm_cairo" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/src/" if="limejvm_cairo" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/default/" if="limejvm_cairo" unless="windows || mac || linux" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/linux/" if="limejvm_cairo linux" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/windows/" if="limejvm_cairo windows" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/mac/" if="limejvm_cairo mac" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/src/" if="limejvm_cairo" />
+		<compilerflag value="-DCAIRO_WIN32_STATIC_BUILD" if="limejvm_cairo windows" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/ogg/include/" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/vorbis/include/" />
+		<file name="src/jni/LimeJNI.cpp" />
+		<file name="src/jni/LimeJNI_gl.cpp" />
+		<file name="src/jni/LimeJNI_audio.cpp" /> <!-- OGG/WAV -> 16-bit PCM decode for the JVM audio backend -->
+		<file name="src/jni/LimeJNI_cairo.cpp" if="limejvm_cairo" /> <!-- cairo delegations -> CairoBindings.cpp; only built with -Dlimejvm_cairo -->
+		<file name="src/jni/LimeJNI_cairo_data.cpp" if="limejvm_cairo" /> <!-- hand-written byte[] surface marshaling (Phase 3) -->
+		<file name="src/jni/LimeJNI_hb.cpp" if="limejvm_cairo" /> <!-- hand-written harfbuzz text shaping (lime_hb_*) -->
+
+		<file name="src/jni/CFFI_jni.cpp" />
+	</files>
+
+	<files id="limejvm-backend">
+		<compilerflag value="-std=c++11" unless="isMsvc" />
+		<compilerflag value="-Isrc/jni/include" />
+		<compilerflag value="-Iinclude" />
+		<compilerflag value="-DLIME_SDL" />
+		<compilerflag value="-DLIME_OPENGL" />
+		<compilerflag value="-DHAVE_LIBC" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/windows/" if="windows" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/mac/" if="mac" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/sdl/include/configs/linux/" if="linux" />
+
+		<file name="src/backend/sdl/SDLApplication.cpp" />
+		<file name="src/backend/sdl/SDLWindow.cpp" />
+		<file name="src/backend/sdl/SDLSystem.cpp" />
+		<file name="src/backend/sdl/SDLGamepad.cpp" />
+		<file name="src/backend/sdl/SDLJoystick.cpp" />
+		<file name="src/backend/sdl/SDLKeyCode.cpp" />
+		<file name="src/backend/sdl/SDLMutex.cpp" />
+		<file name="src/system/System.cpp" />
+		<file name="src/system/Display.cpp" />
+		<file name="src/system/DisplayMode.cpp" />
+		<file name="src/math/Rectangle.cpp" />
+		<file name="src/math/Vector2.cpp" />
+		<file name="src/math/Matrix3.cpp" />
+		<file name="src/app/ApplicationEvent.cpp" />
+		<file name="src/graphics/RenderEvent.cpp" />
+		<file name="src/graphics/ImageBuffer.cpp" />
+		<file name="src/graphics/opengl/OpenGLBindings.cpp" />
+		<file name="src/utils/ArrayBufferView.cpp" />
+		<file name="src/utils/Bytes.cpp" />
+		<file name="src/ui/WindowEvent.cpp" />
+		<file name="src/ui/KeyEvent.cpp" />
+		<file name="src/ui/MouseEvent.cpp" />
+		<file name="src/ui/TextEvent.cpp" />
+		<file name="src/ui/TouchEvent.cpp" />
+		<file name="src/ui/DropEvent.cpp" />
+		<file name="src/ui/GamepadEvent.cpp" />
+		<file name="src/ui/JoystickEvent.cpp" />
+		<file name="src/system/ClipboardEvent.cpp" />
+		<file name="src/system/OrientationEvent.cpp" />
+		<file name="src/system/SensorEvent.cpp" />
+	</files>
+
+	<files id="limejvm-cairo">
+		<compilerflag value="-std=c++11" unless="isMsvc" />
+		<compilerflag value="-Isrc/jni/include" />
+		<compilerflag value="-Iinclude" />
+		<compilerflag value="-DLIME_CAIRO" />
+		<compilerflag value="-DCAIRO_HAS_FT_FONT" />
+		<compilerflag value="-DCAIRO_WIN32_STATIC_BUILD" if="windows" />
+		<compilerflag value="-DLIME_FREETYPE" />
+		<compilerflag value="-DLIME_FREETYPE_LEGACY_METRICS" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/src/" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/default/" unless="windows || mac || linux" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/linux/" if="linux" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/windows/" if="windows" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/custom/cairo/configs/mac/" if="mac" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/cairo/src/" />
+		<compilerflag value="-I${NATIVE_TOOLKIT_PATH}/freetype/include" />
+		<file name="src/graphics/cairo/CairoBindings.cpp" />
+		<file name="src/text/Font.cpp" />
+
+	</files>
+
+	<target id="limejvm" output="${LIBPREFIX}limejvm" tool="linker" toolid="dll">
+
+		<outdir name="${OUTPUT_DIR}/${BINDIR}" />
+
+		<files id="limejvm-jni" />
+		<files id="limejvm-backend" />
+		<files id="limejvm-cairo" if="limejvm_cairo" />
+		<files id="native-toolkit-sdl" if="LIME_SDL" unless="emscripten" />
+		<files id="native-toolkit-cairo" if="limejvm_cairo" />
+		<files id="native-toolkit-pixman" if="limejvm_cairo" />
+		<files id="native-toolkit-freetype" if="limejvm_cairo" />
+		<files id="native-toolkit-harfbuzz" if="limejvm_cairo" />
+		<files id="native-toolkit-png" if="limejvm_cairo" />
+		<files id="native-toolkit-zlib" if="limejvm_cairo" />
+
+		<ext value=".dll" if="windows" />
+		<ext value=".dylib" if="mac" />
+		<ext value=".so" unless="windows || mac" />
+
+		<section if="windows">
+			<lib name="opengl32.lib" />
+			<lib name="gdi32.lib" />
+			<lib name="user32.lib" />
+			<lib name="kernel32.lib" />
+			<lib name="advapi32.lib" />
+			<lib name="winmm.lib" />
+			<lib name="imm32.lib" />
+			<lib name="ole32.lib" />
+			<lib name="oleaut32.lib" />
+			<lib name="version.lib" />
+			<lib name="ws2_32.lib" />
+			<lib name="shell32.lib" />
+			<lib name="comdlg32.lib" />
+			<lib name="setupapi.lib" />
+			<lib name="wbemuuid.lib" />
+			<lib name="comsuppw.lib" unless="winrt || mingw" />
+			<lib name="usp10.lib" if="limejvm_cairo" />  <!-- harfbuzz uniscribe backend: ScriptItemize/Shape/Place -->
+			<lib name="rpcrt4.lib" if="limejvm_cairo" /> <!-- harfbuzz: UuidCreate -->
+		</section>
+
+		<section if="mac">
+			<vflag name="-rpath" value="/usr/local/lib" />
+			<vflag name="-rpath" value="/opt/homebrew/lib" if="HXCPP_ARM64" />
+			<vflag name="-l" value="iconv" />
+			<vflag name="-framework" value="IOKit" />
+			<vflag name="-framework" value="Foundation" />
+			<vflag name="-framework" value="AppKit" />
+			<vflag name="-framework" value="AudioToolbox" />
+			<vflag name="-framework" value="AudioUnit" />
+			<vflag name="-framework" value="Carbon" />
+			<vflag name="-framework" value="Cocoa" />
+			<vflag name="-framework" value="CoreAudio" />
+			<vflag name="-framework" value="CoreVideo" />
+			<vflag name="-framework" value="ForceFeedback" />
+			<vflag name="-framework" value="OpenGL" />
+			<vflag name="-framework" value="SystemConfiguration" />
+			<vflag name="-framework" value="CoreText" if="limejvm_cairo" />     <!-- harfbuzz HAVE_CORETEXT -->
+			<vflag name="-framework" value="CoreGraphics" if="limejvm_cairo" /> <!-- harfbuzz/cairo coretext -->
+		</section>
+
+	</target>
+
 	<target id="lime" output="${LIBPREFIX}lime${DEBUGEXTRA}${LIBSUFFIX}" tool="linker" toolid="${STD_MODULE_LINK}">
 
 		<outdir name="${OUTPUT_DIR}/${BINDIR}" />
@@ -587,7 +745,8 @@
 
 	<target id="default">
 
-		<target id="lime" unless="lime-legacy" />
+		<target id="limejvm" if="limejvm" />
+		<target id="lime" unless="lime-legacy || limejvm" />
 		<target id="lime-legacy" if="lime-legacy" />
 
 	</target>

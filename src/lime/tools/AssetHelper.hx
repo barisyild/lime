@@ -265,7 +265,7 @@ class AssetHelper
 		}
 		else
 		{
-			if (project.target == WEB_ASSEMBLY
+			if ((project.target == WEB_ASSEMBLY || project.targetFlags.exists("teavm"))
 				&& (asset.embed != false
 					|| (asset.library != null && libraries.exists(asset.library) && libraries[asset.library].preload)))
 			{

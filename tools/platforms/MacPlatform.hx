@@ -143,9 +143,9 @@ class MacPlatform extends PlatformTarget
 				}
 			}
 		}
-		else if (project.targetFlags.exists("java"))
+		else if (project.targetFlags.exists("jvm"))
 		{
-			targetType = "java";
+			targetType = "jvm";
 		}
 		else if (project.targetFlags.exists("nodejs"))
 		{
@@ -164,6 +164,8 @@ class MacPlatform extends PlatformTarget
 		{
 			case "cpp": "macos";
 			case "hl": project.targetFlags.exists("hlc") ? "hlc" : targetType;
+			case "jvm" if (project.targetFlags.exists("teavm")): "teavm";
+			case "jvm" if (project.targetFlags.exists("graalvm")): "graalvm";
 			default: targetType;
 		}
 		targetDirectory = Path.combine(project.app.path, project.config.getString("mac.output-directory", defaultTargetDirectory));
@@ -289,19 +291,12 @@ class MacPlatform extends PlatformTarget
 				System.runCommand("", "chmod", ["755", executablePath]);
 			}
 		}
-		else if (targetType == "java")
+		else if (targetType == "jvm")
 		{
-			var libPath = Path.combine(Haxelib.getPath(new Haxelib("lime")), "templates/java/lib/");
-
-			System.runCommand("", "haxe", [hxml, "-java-lib", libPath + "disruptor.jar", "-java-lib", libPath + "lwjgl.jar"]);
-
+			var jvm = new JVMPlatform(project, targetDirectory, "Mac" + dirSuffix);
+			jvm.compile(hxml);
 			if (noOutput) return;
-
-			Haxelib.runCommand(targetDirectory + "/obj", ["run", "hxjava", "hxjava_build.txt", "--haxe-version", "3103"]);
-			System.recursiveCopy(targetDirectory + "/obj/lib", Path.combine(executableDirectory, "lib"));
-			System.copyFile(targetDirectory + "/obj/ApplicationMain" + (project.debug ? "-Debug" : "") + ".jar",
-				Path.combine(executableDirectory, project.app.file + ".jar"));
-			JavaHelper.copyLibraries(project.templatePaths, "Mac" + dirSuffix, executableDirectory);
+			jvm.deploy();
 		}
 		else if (targetType == "nodejs")
 		{
@@ -367,7 +362,7 @@ class MacPlatform extends PlatformTarget
 			}
 		}
 
-		if (System.hostPlatform != WINDOWS && targetType != "nodejs" && targetType != "java" && sys.FileSystem.exists(executablePath))
+		if (System.hostPlatform != WINDOWS && targetType != "nodejs" && targetType != "jvm" && sys.FileSystem.exists(executablePath))
 		{
 			System.runCommand("", "chmod", ["755", executablePath]);
 		}
@@ -426,7 +421,7 @@ class MacPlatform extends PlatformTarget
 					hxml.hl = "_.hl";
 				case "neko":
 					hxml.neko = "_.n";
-				case "java":
+				case "jvm":
 					hxml.java = "_";
 				case "nodejs":
 					hxml.js = "_.js";
@@ -503,9 +498,9 @@ class MacPlatform extends PlatformTarget
 		{
 			NodeJSHelper.run(project, executableDirectory + "/ApplicationMain.js", arguments);
 		}
-		else if (targetType == "java")
+		else if (targetType == "jvm")
 		{
-			System.runCommand(executableDirectory, "java", ["-jar", project.app.file + ".jar"].concat(arguments));
+			new JVMPlatform(project, targetDirectory, "Mac" + dirSuffix).run(arguments);
 		}
 		else if (project.target == System.hostPlatform)
 		{

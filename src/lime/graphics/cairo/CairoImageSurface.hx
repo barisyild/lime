@@ -25,7 +25,10 @@ import lime.utils.DataPointer;
 
 	public static function create(data:DataPointer, format:CairoFormat, width:Int, height:Int, stride:Int):CairoSurface
 	{
-		#if (lime_cffi && lime_cairo && !macro)
+		#if jvm
+		var d = DataPointer.__jvmLookup(data);
+		return cast lime.jni.Lime.lime_cairo_image_surface_create_for_data_jvm(d != null ? d.bytes.getData() : null, d != null ? d.offset : 0, format, width, height, stride);
+		#elseif (lime_cffi && lime_cairo && !macro)
 		return NativeCFFI.lime_cairo_image_surface_create_for_data(data, format, width, height, stride);
 		#else
 		return cast 0;

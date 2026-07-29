@@ -33,3 +33,13 @@ node_modules
 !templates/**/node_modules
 .vscode/
 tests/**/bin/
+
+# lime-jvm (JNI bridge) build artifacts
+jni-build/
+project/limejvm*.log
+jni-gen/*.class
+jni-gen/classes/
+jni-gen/*.jar
+jni-gen/*.dll
+jni-gen/out/
+jni-gen/LimeJNI.c

@@ -72,6 +72,37 @@ class ImageCanvasUtil
 		}
 		#end
 
+		#if (wasmjs)
+		var buffer = image.buffer;
+		if (buffer.__srcImage != null)
+		{
+			if (buffer.__srcCanvas == null)
+			{
+				buffer.__srcCanvas = cast wjs.Callbacks.createCanvas();
+				buffer.__srcCanvas.width = buffer.width;
+				buffer.__srcCanvas.height = buffer.height;
+				buffer.__srcContext = cast wjs.Callbacks.getContext2D(cast buffer.__srcCanvas);
+				buffer.__srcContext.drawImage(cast buffer.__srcImage, 0, 0);
+			}
+			buffer.__srcImage = null;
+		}
+		else if (buffer.__srcCanvas == null && buffer.data != null)
+		{
+			image.transparent = true;
+			buffer.__srcCanvas = cast wjs.Callbacks.createCanvas();
+			buffer.__srcCanvas.width = buffer.width;
+			buffer.__srcCanvas.height = buffer.height;
+			buffer.__srcContext = cast wjs.Callbacks.getContext2D(cast buffer.__srcCanvas);
+			wjs.Callbacks.putImageBytes(cast buffer.__srcContext, wjs._jso.Int8Array.copyFromJavaArray(@:privateAccess buffer.data.buffer.getData()), buffer.width, buffer.height, buffer.premultiplied);
+		}
+		else if (image.type == DATA && buffer.__srcContext != null && buffer.data != null && image.dirty)
+		{
+			wjs.Callbacks.putImageBytes(cast buffer.__srcContext, wjs._jso.Int8Array.copyFromJavaArray(@:privateAccess buffer.data.buffer.getData()), buffer.width, buffer.height, buffer.premultiplied);
+			image.dirty = false;
+		}
+		if (clear) buffer.data = null;
+		#end
+
 		image.type = CANVAS;
 	}
 
@@ -112,6 +143,22 @@ class ImageCanvasUtil
 		}
 		#end
 
+		#if (wasmjs)
+		if (buffer.data == null || (image.type == CANVAS && image.dirty && buffer.__srcCanvas != null))
+		{
+			var bytes = buffer.__srcCanvas != null
+				? wjs.GLData.canvasToBytes(cast buffer.__srcCanvas, buffer.width, buffer.height)
+				: (buffer.__srcImage != null
+					? wjs.GLData.bitmapToBytes(buffer.__srcImage, buffer.width, buffer.height) : null);
+			if (bytes != null)
+			{
+				buffer.data = lime.utils.UInt8Array.fromBytes(bytes);
+				buffer.premultiplied = true;
+				image.dirty = false;
+			}
+		}
+		#end
+
 		image.type = DATA;
 	}
 
@@ -127,6 +174,13 @@ class ImageCanvasUtil
 	public static function copyPixels(image:Image, sourceImage:Image, sourceRect:Rectangle, destPoint:Vector2, alphaImage:Image = null,
 			alphaPoint:Vector2 = null, mergeAlpha:Bool = false):Void
 	{
+		#if (wasmjs)
+		convertToData(image);
+		convertToData(sourceImage);
+		if (alphaImage != null) convertToData(alphaImage);
+		ImageDataUtil.copyPixels(image, sourceImage, sourceRect, destPoint, alphaImage, alphaPoint, mergeAlpha);
+		return;
+		#end
 		if (destPoint == null || destPoint.x >= image.width || destPoint.y >= image.height || sourceRect == null || sourceRect.width < 1
 			|| sourceRect.height < 1)
 		{
@@ -221,6 +275,11 @@ class ImageCanvasUtil
 
 	public static function fillRect(image:Image, rect:Rectangle, color:Int, format:PixelFormat):Void
 	{
+		#if (wasmjs)
+		convertToData(image);
+		ImageDataUtil.fillRect(image, rect, color, format);
+		return;
+		#end
 		convertToCanvas(image);
 
 		var r:Int;
@@ -306,6 +365,11 @@ class ImageCanvasUtil
 
 	public static function resize(image:Image, newWidth:Int, newHeight:Int):Void
 	{
+		#if (wasmjs)
+		convertToData(image);
+		ImageDataUtil.resize(image, newWidth, newHeight);
+		return;
+		#end
 		var buffer = image.buffer;
 
 		if (buffer.__srcCanvas == null)

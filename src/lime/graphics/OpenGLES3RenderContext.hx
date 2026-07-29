@@ -1,7 +1,7 @@
 package lime.graphics;
 
 #if (!lime_doc_gen || lime_opengl || lime_opengles)
-#if (lime_doc_gen || (sys && lime_cffi && !doc_gen))
+#if (lime_doc_gen || (sys && lime_cffi && !doc_gen && !(wasmjs)))
 import haxe.Int64;
 import haxe.io.Bytes;
 import lime._internal.backend.native.NativeOpenGLRenderContext;

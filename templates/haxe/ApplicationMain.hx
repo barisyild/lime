@@ -12,12 +12,32 @@ import ::APP_MAIN::;
 		lime.system.System.__registerEntryPoint("::APP_FILE::", create);
 
 		#if (!html5 || munit)
+		#if (teavm)
+		var embedConfig:Dynamic = null;
+		var rootPath = tjs.Callbacks.embedRootPath();
+		var parametersJson = tjs.Callbacks.embedParametersJson();
+		var embedWidth = tjs.Callbacks.embedWidth();
+		var embedHeight = tjs.Callbacks.embedHeight();
+		if (rootPath != "" || parametersJson != "" || embedWidth > 0 || embedHeight > 0)
+		{
+			embedConfig = {};
+			if (rootPath != "") Reflect.setField(embedConfig, "rootPath", rootPath);
+			if (parametersJson != "") Reflect.setField(embedConfig, "parameters", haxe.Json.parse(parametersJson));
+			if (embedWidth > 0) Reflect.setField(embedConfig, "width", embedWidth);
+			if (embedHeight > 0) Reflect.setField(embedConfig, "height", embedHeight);
+		}
+		create(embedConfig);
+		#else
 		create(null);
+		#end
 		#end
 	}
 
 	public static function create(config:Dynamic):Void
 	{
+		#if teavm
+		lime.teavm.LimeReflectBoot.init();
+		#end
 		#if !disable_preloader_assets
 		ManifestResources.init(config);
 		#end
@@ -125,7 +145,7 @@ import ::APP_MAIN::;
 
 		var result = app.exec();
 
-		#if (sys && !ios && !nodejs && !webassembly)
+		#if (sys && !ios && !nodejs && !webassembly && !teavm)
 		lime.system.System.exit(result);
 		#end
 

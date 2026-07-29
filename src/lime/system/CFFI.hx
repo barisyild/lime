@@ -26,7 +26,7 @@ class CFFI
 	{
 		#if lime_cffi
 		available = true;
-		enabled = #if disable_cffi false; #else true; #end
+		enabled = #if (disable_cffi || jvm) false; #else true; #end
 		#else
 		available = false;
 		enabled = false;

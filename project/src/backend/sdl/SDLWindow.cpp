@@ -192,6 +192,23 @@ namespace lime {
 #endif
 
 
+	extern "C" int limejvm_screen_width (void) {
+
+		SDL_DisplayMode dm;
+		if (SDL_GetDesktopDisplayMode (0, &dm) == 0) return dm.w;
+		return 0;
+
+	}
+
+	extern "C" int limejvm_screen_height (void) {
+
+		SDL_DisplayMode dm;
+		if (SDL_GetDesktopDisplayMode (0, &dm) == 0) return dm.h;
+		return 0;
+
+	}
+
+
 	SDLWindow::SDLWindow (Application* application, int width, int height, int flags, const char* title) {
 
 		activeSwapInterval = 0;
@@ -205,6 +222,24 @@ namespace lime {
 
 		currentApplication = application;
 		this->flags = flags;
+
+		if (width <= 0 || height <= 0) {
+
+			SDL_Rect usable;
+
+			if (SDL_GetDisplayUsableBounds (0, &usable) == 0) {
+
+				if (width <= 0) width = usable.w;
+				if (height <= 0) height = usable.h;
+
+			} else {
+
+				if (width <= 0) width = 800;
+				if (height <= 0) height = 600;
+
+			}
+
+		}
 
 		int sdlWindowFlags = 0;
 

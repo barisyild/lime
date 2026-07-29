@@ -1,7 +1,35 @@
 package lime.graphics.opengl;
 
 #if (!lime_doc_gen || lime_opengl || lime_opengles || lime_webgl)
-#if !doc_gen
+#if (wasmjs)
+import lime.graphics.opengl.GL;
+import lime.graphics.opengl.GLShader;
+import lime.graphics.WebGLRenderContext;
+import lime.utils.Log;
+
+@:forward abstract GLProgram(wjs.html.webgl.Program) from wjs.html.webgl.Program to wjs.html.webgl.Program
+{
+	public static function fromSources(gl:WebGLRenderContext, vertexSource:String, fragmentSource:String):GLProgram
+	{
+		var vertexShader = GLShader.fromSource(gl, vertexSource, gl.VERTEX_SHADER);
+		var fragmentShader = GLShader.fromSource(gl, fragmentSource, gl.FRAGMENT_SHADER);
+
+		var program = gl.createProgram();
+		gl.attachShader(program, vertexShader);
+		gl.attachShader(program, fragmentShader);
+		gl.linkProgram(program);
+
+		if (gl.getProgramParameter(program, GL.LINK_STATUS) == 0)
+		{
+			var message = "Unable to initialize the shader program";
+			message += "\n" + GL.getProgramInfoLog(program);
+			Log.error(message);
+		}
+
+		return program;
+	}
+}
+#elseif !doc_gen
 import lime.graphics.opengl.GL;
 import lime.graphics.opengl.GLShader;
 import lime.graphics.WebGLRenderContext;

@@ -49,7 +49,7 @@ import lime.system.WorkOutput;
 @:noDebug
 #end
 @:allow(lime.app.Future)
-#if (!hl && !js && !macro)
+#if (!hl && !js && !macro && !jvm) // genjvm @:generic specialization emits invalid bytecode (VerifyError in completeWith) — erase on jvm
 @:generic
 #end
 class Promise<T>

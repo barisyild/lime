@@ -35,6 +35,7 @@ class HXProject extends Script
 	public var excludeArchitectures:Array<Architecture>;
 	public var haxedefs:Map<String, Dynamic>;
 	public var haxeflags:Array<String>;
+	public var reflectionEntries:Array<Dynamic>;
 	public var haxelibs:Array<Haxelib>;
 	public var host(get, null):Platform;
 	public var icons:Array<Icon>;
@@ -197,6 +198,7 @@ class HXProject extends Script
 
 		haxedefs = new Map<String, Dynamic>();
 		haxeflags = new Array<String>();
+		reflectionEntries = new Array<Dynamic>();
 		haxelibs = new Array<Haxelib>();
 		icons = new Array<Icon>();
 		javaPaths = new Array<String>();
@@ -260,6 +262,7 @@ class HXProject extends Script
 		}
 
 		project.haxeflags = haxeflags.copy();
+		project.reflectionEntries = reflectionEntries == null ? [] : reflectionEntries.copy();
 
 		for (haxelib in haxelibs)
 		{
@@ -727,6 +730,13 @@ class HXProject extends Script
 			defines.set("native", "1");
 			defines.set("java", "1");
 		}
+		else if (targetFlags.exists("jvm"))
+		{
+			defines.set("targetType", "java");
+			defines.set("native", "1");
+			defines.set("java", "1");
+			defines.set("jvm", "1");
+		}
 		else if (targetFlags.exists("nodejs"))
 		{
 			defines.set("targetType", "nodejs");
@@ -826,6 +836,14 @@ class HXProject extends Script
 			defines.set("static_link", "1");
 		}
 
+		for (flag in ["teavm", "graalvm"])
+		{
+			if (targetFlags.exists(flag) && !defines.exists(flag))
+			{
+				defines.set(flag, "1");
+			}
+		}
+
 		if (defines.exists("SWF_PLAYER"))
 		{
 			environment.set("SWF_PLAYER", defines.get("SWF_PLAYER"));
@@ -910,6 +928,8 @@ class HXProject extends Script
 			dependencies = ArrayTools.concatUnique(dependencies, project.dependencies, true);
 			excludeArchitectures = ArrayTools.concatUnique(excludeArchitectures, project.excludeArchitectures);
 			haxeflags = ArrayTools.concatUnique(haxeflags, project.haxeflags);
+			if (reflectionEntries == null) reflectionEntries = [];
+			if (project.reflectionEntries != null) reflectionEntries = reflectionEntries.concat(project.reflectionEntries);
 			haxelibs = ArrayTools.concatUnique(haxelibs, project.haxelibs, true, "name");
 			icons = ArrayTools.concatUnique(icons, project.icons);
 			javaPaths = ArrayTools.concatUnique(javaPaths, project.javaPaths, true);
@@ -1398,12 +1418,15 @@ class HXProject extends Script
 			}
 		}
 
-		if (target != Platform.FLASH)
+		if (target != Platform.FLASH && !targetFlags.exists("teavm"))
 		{
 			compilerFlags.push("-D " + Std.string(target).toLowerCase());
 		}
 
-		compilerFlags.push("-D " + Std.string(platformType).toLowerCase());
+		if (!targetFlags.exists("teavm"))
+		{
+			compilerFlags.push("-D " + Std.string(platformType).toLowerCase());
+		}
 		compilerFlags = compilerFlags.concat(haxeflags);
 
 		if (compilerFlags.length == 0)

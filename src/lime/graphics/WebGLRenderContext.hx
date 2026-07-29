@@ -1,6 +1,103 @@
 package lime.graphics;
 
-#if (!lime_doc_gen || lime_opengl || lime_opengles || lime_webgl)
+#if (wasmjs)
+import lime.graphics.opengl.*;
+@:forward
+@:transitive
+abstract WebGLRenderContext(wjs.html.webgl.RenderingContext) from wjs.html.webgl.RenderingContext to wjs.html.webgl.RenderingContext
+{
+	public inline function bufferData(target:Int, srcData:lime.utils.ArrayBufferView, usage:Int):Void
+	{
+		this.bufferData(target, wjs.GLData.bytes(srcData), usage);
+	}
+
+	public inline function bufferSubData(target:Int, offset:Int, srcData:lime.utils.ArrayBufferView):Void
+	{
+		this.bufferSubData(target, offset, wjs.GLData.bytes(srcData));
+	}
+
+	public inline function texImage2D(target:Int, level:Int, internalformat:Int, width:Int, height:Int, border:Int, format:Int, type:Int,
+			srcData:lime.utils.ArrayBufferView):Void
+	{
+		this.texImage2D(target, level, internalformat, width, height, border, format, type, wjs.GLData.bytes(srcData));
+	}
+
+	public inline function texSubImage2D(target:Int, level:Int, xoffset:Int, yoffset:Int, width:Int, height:Int, format:Int, type:Int,
+			srcData:lime.utils.ArrayBufferView):Void
+	{
+		this.texSubImage2D(target, level, xoffset, yoffset, width, height, format, type, wjs.GLData.bytes(srcData));
+	}
+
+	public inline function compressedTexImage2D(target:Int, level:Int, internalformat:Int, width:Int, height:Int, border:Int,
+			srcData:lime.utils.ArrayBufferView):Void
+	{
+		this.compressedTexImage2D(target, level, internalformat, width, height, border, wjs.GLData.bytes(srcData));
+	}
+
+	public inline function compressedTexSubImage2D(target:Int, level:Int, xoffset:Int, yoffset:Int, width:Int, height:Int, format:Int,
+			srcData:lime.utils.ArrayBufferView):Void
+	{
+		this.compressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, wjs.GLData.bytes(srcData));
+	}
+
+	public inline function readPixels(x:Int, y:Int, width:Int, height:Int, format:Int, type:Int, pixels:lime.utils.ArrayBufferView):Void
+	{
+		var dst = wjs._jso.Uint8Array.create(pixels.byteLength);
+		this.readPixels(x, y, width, height, format, type, dst);
+		wjs.GLData.readBack(pixels, dst);
+	}
+
+	public inline function uniform1fv(location:GLUniformLocation, v:lime.utils.Float32Array, ?srcOffset:Int, ?srcLength:Int):Void
+	{
+		this.uniform1fv(location, wjs.GLData.floats(v));
+	}
+
+	public inline function uniform2fv(location:GLUniformLocation, v:lime.utils.Float32Array, ?srcOffset:Int, ?srcLength:Int):Void
+	{
+		this.uniform2fv(location, wjs.GLData.floats(v));
+	}
+
+	public inline function uniform3fv(location:GLUniformLocation, v:lime.utils.Float32Array, ?srcOffset:Int, ?srcLength:Int):Void
+	{
+		this.uniform3fv(location, wjs.GLData.floats(v));
+	}
+
+	public inline function uniform4fv(location:GLUniformLocation, v:lime.utils.Float32Array, ?srcOffset:Int, ?srcLength:Int):Void
+	{
+		this.uniform4fv(location, wjs.GLData.floats(v));
+	}
+
+	public inline function uniformMatrix2fv(location:GLUniformLocation, transpose:Bool, v:lime.utils.Float32Array):Void
+	{
+		this.uniformMatrix2fv(location, transpose, wjs.GLData.floats(v));
+	}
+
+	public inline function uniformMatrix3fv(location:GLUniformLocation, transpose:Bool, v:lime.utils.Float32Array):Void
+	{
+		this.uniformMatrix3fv(location, transpose, wjs.GLData.floats(v));
+	}
+
+	public inline function uniformMatrix4fv(location:GLUniformLocation, transpose:Bool, v:lime.utils.Float32Array):Void
+	{
+		this.uniformMatrix4fv(location, transpose, wjs.GLData.floats(v));
+	}
+
+	@:from private static function fromWebGL2RenderContext(gl:WebGL2RenderContext):WebGLRenderContext
+	{
+		return cast gl;
+	}
+
+	@:from private static function fromRenderContext(context:RenderContext):WebGLRenderContext
+	{
+		return context.webgl;
+	}
+
+	@:from private static function fromGL(gl:Class<GL>):WebGLRenderContext
+	{
+		return cast GL.context;
+	}
+}
+#elseif (!lime_doc_gen || lime_opengl || lime_opengles || lime_webgl)
 import lime.graphics.opengl.*;
 import lime.utils.ArrayBufferView;
 import lime.utils.Float32Array;

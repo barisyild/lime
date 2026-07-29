@@ -17,6 +17,62 @@
 #include FT_OUTLINE_H
 #endif
 
+#include <utils/Resource.h>
+
+
+namespace lime {
+
+
+	Font* lime_jvm_font_load_file (const char* path) {
+
+		#ifdef LIME_FREETYPE
+		Resource resource (path);
+		Font* font = new Font (&resource, 0);
+		if (font && font->face) return font;
+		if (font) delete font;
+		#endif
+		return 0;
+
+	}
+
+
+	Font* lime_jvm_font_load_bytes (const unsigned char* data, int length) {
+
+		#ifdef LIME_FREETYPE
+		if (!data || length <= 0) return 0;
+		Bytes* bytes = new Bytes ();
+		bytes->Resize (length);
+		memcpy (bytes->b, data, length);
+		Resource resource (bytes);
+		Font* font = new Font (&resource, 0);
+		if (font && font->face) return font;
+		if (font) delete font;
+		delete bytes;
+		#endif
+		return 0;
+
+	}
+
+
+	void* lime_jvm_font_ft_face (void* limeFont) {
+
+		#ifdef LIME_FREETYPE
+		return limeFont ? (void*)((Font*)limeFont)->face : 0;
+		#endif
+		return 0;
+
+	}
+
+
+	extern "C" void lime_jvm_font_destroy (void* limeFont) {
+
+		if (limeFont) delete (Font*)limeFont;
+
+	}
+
+
+}
+
 #ifdef GetGlyphIndices
 #undef GetGlyphIndices
 #endif

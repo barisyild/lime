@@ -4,6 +4,7 @@ import haxe.ds.Vector;
 import haxe.Int32;
 import haxe.io.Bytes;
 import lime._internal.backend.native.NativeCFFI;
+import lime._internal.graphics.ImageCanvasUtil;
 import lime.graphics.Image;
 import lime.graphics.ImageBuffer;
 import lime.graphics.ImageChannel;
@@ -852,6 +853,9 @@ class ImageDataUtil
 
 	public static function getPixels(image:Image, rect:Rectangle, format:PixelFormat):Bytes
 	{
+		#if (wasmjs)
+		if (image.buffer.data == null) ImageCanvasUtil.convertToData(image);
+		#end
 		if (image.buffer.data == null) return null;
 
 		var length = Std.int(rect.width * rect.height);

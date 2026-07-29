@@ -18,6 +18,11 @@ import js.html.Uint8ClampedArray;
 #elseif flash
 import flash.display.BitmapData;
 #end
+#if (wasmjs)
+import wjs._jso.HTMLImageElement as HTMLImage;
+import wjs.html.CanvasElement;
+import wjs.html.CanvasRenderingContext2D;
+#end
 
 /**
 	`ImageBuffer` is a simple object for storing image data.
@@ -80,10 +85,10 @@ class ImageBuffer
 	public var width:Int;
 
 	@:noCompletion private var __srcBitmapData:#if flash BitmapData #else Dynamic #end;
-	@:noCompletion private var __srcCanvas:#if (js && html5) CanvasElement #else Dynamic #end;
-	@:noCompletion private var __srcContext:#if (js && html5) CanvasRenderingContext2D #else Dynamic #end;
+	@:noCompletion private var __srcCanvas:#if ((js && html5) || (wasmjs)) CanvasElement #else Dynamic #end;
+	@:noCompletion private var __srcContext:#if ((js && html5) || (wasmjs)) CanvasRenderingContext2D #else Dynamic #end;
 	@:noCompletion private var __srcCustom:Dynamic;
-	@:noCompletion private var __srcImage:#if (js && html5) HTMLImage #else Dynamic #end;
+	@:noCompletion private var __srcImage:#if ((js && html5) || (wasmjs)) HTMLImage #else Dynamic #end;
 	@:noCompletion private var __srcImageData:#if (js && html5) ImageData #else Dynamic #end;
 
 	#if commonjs
@@ -174,6 +179,16 @@ class ImageBuffer
 			bytes.blit(0, buffer.data.buffer, 0, data.byteLength);
 			buffer.data = new UInt8Array(bytes);
 		}
+		#if (wasmjs)
+		else if (__srcImage != null)
+		{
+			buffer.__srcImage = __srcImage;
+		}
+		else if (__srcCanvas != null)
+		{
+			buffer.__srcCanvas = __srcCanvas;
+		}
+		#end
 		#end
 
 		buffer.bitsPerPixel = bitsPerPixel;

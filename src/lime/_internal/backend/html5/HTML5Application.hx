@@ -1,8 +1,16 @@
 package lime._internal.backend.html5;
 
+#if wasmjs
+import wjs.html.DeviceMotionEvent;
+import wjs.html.Event;
+import wjs.html.KeyboardEvent;
+import wjs.Browser;
+#else
 import js.html.DeviceMotionEvent;
+import js.html.Event;
 import js.html.KeyboardEvent;
 import js.Browser;
+#end
 import lime.app.Application;
 import lime.app.FrameOptions;
 import lime.app.FrameProfile;
@@ -43,6 +51,10 @@ class HTML5Application
 	public inline function new(parent:Application)
 	{
 		this.parent = parent;
+
+		#if teavm
+		tjs.Callbacks.installLocalTimezone();
+		#end
 
 		currentUpdate = 0;
 		lastUpdate = 0;
@@ -287,7 +299,7 @@ class HTML5Application
 		Browser.window.addEventListener("resize", handleWindowEvent, false);
 		Browser.window.addEventListener("beforeunload", handleWindowEvent, false);
 
-		if (Reflect.hasField(Browser.window, "Accelerometer"))
+		if (#if (wasmjs) wjs.Callbacks.hasWindowField("Accelerometer") #else Reflect.hasField(Browser.window, "Accelerometer") #end)
 		{
 			Browser.window.addEventListener("devicemotion", handleSensorEvent, false);
 		}
@@ -299,6 +311,7 @@ class HTML5Application
 		Browser.document.body.appendChild(stats.domElement);
 		#end
 
+		#if !wasmjs
 		untyped #if haxe4 js.Syntax.code #else __js__ #end ("
 			if (!CanvasRenderingContext2D.prototype.isPointInStroke) {
 				CanvasRenderingContext2D.prototype.isPointInStroke = function (path, x, y) {
@@ -349,6 +362,7 @@ class HTML5Application
 
 			window.requestAnimFrame = window.requestAnimationFrame;
 		");
+		#end
 
 		lastUpdate = Browser.window.performance.now();
 
@@ -382,6 +396,9 @@ class HTML5Application
 
 	private function handleApplicationEvent(?__):Void
 	{
+		#if (wasmjs)
+		TeavmLoop.pump();
+		#end
 		// TODO: Support independent window frame rates
 
 		for (window in parent.__windows)
@@ -471,7 +488,7 @@ class HTML5Application
 		accelerometer.onUpdate.dispatch(event.accelerationIncludingGravity.x, event.accelerationIncludingGravity.y, event.accelerationIncludingGravity.z);
 	}
 
-	private function handleWindowEvent(event:js.html.Event):Void
+	private function handleWindowEvent(event:Event):Void
 	{
 		if (parent.window != null)
 		{

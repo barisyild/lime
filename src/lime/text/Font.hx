@@ -19,7 +19,7 @@ import js.html.CanvasRenderingContext2D;
 import js.html.SpanElement;
 import js.Browser;
 #end
-#if (lime_cffi && !macro)
+#if ((lime_cffi || jvm) && !macro)
 import haxe.io.Path;
 #end
 
@@ -608,7 +608,13 @@ class Font
 	{
 		__fontPath = null;
 
-		#if (lime_cffi && !macro)
+		#if (wasmjs)
+		if (name != null && bytes != null)
+		{
+			wjs.Callbacks.registerFontFaceBytes(name, wjs._jso.Int8Array.copyFromJavaArray(bytes.getData()));
+		}
+		__init = true;
+		#elseif (lime_cffi && !macro)
 		__fontPathWithoutDirectory = null;
 
 		src = NativeCFFI.lime_font_load_bytes(bytes);
@@ -621,7 +627,10 @@ class Font
 	{
 		__fontPath = path;
 
-		#if (lime_cffi && !macro)
+		#if (wasmjs)
+		if (name == null) name = Path.withoutExtension(Path.withoutDirectory(__fontPath));
+		__initializeSource();
+		#elseif (lime_cffi && !macro)
 		__fontPathWithoutDirectory = Path.withoutDirectory(__fontPath);
 
 		src = NativeCFFI.lime_font_load_file(__fontPath);
@@ -649,6 +658,13 @@ class Font
 			strikethroughPosition = NativeCFFI.lime_font_get_strikethrough_position(src);
 			strikethroughThickness = NativeCFFI.lime_font_get_strikethrough_thickness(src);
 			unitsPerEM = NativeCFFI.lime_font_get_units_per_em(src);
+		}
+		#end
+
+		#if (wasmjs)
+		if (name != null && __fontPath != null)
+		{
+			wjs.Callbacks.registerFontFace(name, __fontPath);
 		}
 		#end
 

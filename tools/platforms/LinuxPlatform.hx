@@ -158,9 +158,9 @@ class LinuxPlatform extends PlatformTarget
 		{
 			targetType = "nodejs";
 		}
-		else if (project.targetFlags.exists("java"))
+		else if (project.targetFlags.exists("jvm"))
 		{
-			targetType = "java";
+			targetType = "jvm";
 		}
 		else
 		{
@@ -261,9 +261,9 @@ class LinuxPlatform extends PlatformTarget
 			// NekoHelper.createExecutable (project.templatePaths, "linux" + (is64 ? "64" : ""), targetDirectory + "/obj/ApplicationMain.n", executablePath);
 			// NekoHelper.copyLibraries (project.templatePaths, "linux" + (is64 ? "64" : ""), applicationDirectory);
 		}
-		else if (targetType == "java")
+		else if (targetType == "jvm")
 		{
-			var libPath = Path.combine(Haxelib.getPath(new Haxelib("lime")), "templates/java/lib/");
+			var libPath = Path.combine(Haxelib.getPath(new Haxelib("lime")), "templates/jvm/lib/");
 
 			System.runCommand("", "haxe", [hxml, "-java-lib", libPath + "disruptor.jar", "-java-lib", libPath + "lwjgl.jar"]);
 			// System.runCommand ("", "haxe", [ hxml ]);
@@ -389,7 +389,7 @@ class LinuxPlatform extends PlatformTarget
 			}
 		}
 
-		if (System.hostPlatform != WINDOWS && (targetType != "nodejs" && targetType != "java"))
+		if (System.hostPlatform != WINDOWS && (targetType != "nodejs" && targetType != "jvm"))
 		{
 			System.runCommand("", "chmod", ["755", executablePath]);
 		}
@@ -457,7 +457,7 @@ class LinuxPlatform extends PlatformTarget
 					hxml.hl = "_.hl";
 				case "neko":
 					hxml.neko = "_.n";
-				case "java":
+				case "jvm":
 					hxml.java = "_";
 				case "nodejs":
 					hxml.js = "_.js";
@@ -549,7 +549,7 @@ class LinuxPlatform extends PlatformTarget
 		{
 			NodeJSHelper.run(project, targetDirectory + "/bin/ApplicationMain.js", arguments);
 		}
-		else if (targetType == "java")
+		else if (targetType == "jvm")
 		{
 			System.runCommand(applicationDirectory, "java", ["-jar", project.app.file + ".jar"].concat(arguments));
 		}

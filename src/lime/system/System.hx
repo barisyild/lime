@@ -21,6 +21,8 @@ import flash.desktop.NativeApplication;
 #if ((js && html5) || electron)
 import js.html.Element;
 import js.Browser;
+#elseif wasmjs
+import wjs.Browser;
 #end
 #if sys
 import sys.io.Process;
@@ -239,6 +241,28 @@ class System
 	public static function getDisplay(id:Int):Display
 	{
 		#if (lime_cffi && !macro)
+		#if jvm
+		if (id == 0)
+		{
+			var screenWidth = NativeCFFI.lime_jvm_screen_width();
+			var screenHeight = NativeCFFI.lime_jvm_screen_height();
+
+			if (screenWidth > 0 && screenHeight > 0)
+			{
+				var jvmDisplay = new Display();
+				jvmDisplay.id = 0;
+				jvmDisplay.name = "Display";
+				jvmDisplay.bounds = new Rectangle(0, 0, screenWidth, screenHeight);
+				jvmDisplay.safeArea = new Rectangle(0, 0, screenWidth, screenHeight);
+				jvmDisplay.orientation = screenWidth >= screenHeight ? LANDSCAPE : PORTRAIT;
+				jvmDisplay.dpi = 96;
+				jvmDisplay.currentMode = new DisplayMode(screenWidth, screenHeight, 60, RGBA32);
+				jvmDisplay.supportedModes = [jvmDisplay.currentMode];
+				return jvmDisplay;
+			}
+		}
+		return null;
+		#end
 		var displayInfo:Dynamic = NativeCFFI.lime_system_get_display(id);
 
 		if (displayInfo != null)
@@ -394,6 +418,8 @@ class System
 		return flash.Lib.getTimer();
 		#elseif ((js && !nodejs) || electron)
 		return Std.int(Browser.window.performance.now());
+		#elseif (wasmjs)
+		return wjs.Callbacks.getTimer();
 		#elseif (lime_cffi && !macro)
 		return cast NativeCFFI.lime_system_get_timer();
 		#elseif cpp
@@ -451,10 +477,10 @@ class System
 	{
 		if (url != null)
 		{
-			#if desktop
-			openFile(url);
-			#elseif (js && html5)
+			#if ((js && html5) || wasmjs)
 			Browser.window.open(url, target);
+			#elseif desktop
+			openFile(url);
 			#elseif flash
 			Lib.getURL(new URLRequest(url), target);
 			#elseif android
@@ -725,7 +751,11 @@ class System
 	{
 		if (__applicationDirectory == null)
 		{
+			#if jvm
+			__applicationDirectory = haxe.io.Path.addTrailingSlash(Sys.getCwd());
+			#else
 			__applicationDirectory = __getDirectory(APPLICATION);
+			#end
 		}
 
 		return __applicationDirectory;
@@ -735,7 +765,31 @@ class System
 	{
 		if (__applicationStorageDirectory == null)
 		{
+			#if jvm
+			var company = "MyCompany";
+			var file = "MyApplication";
+			if (Application.current != null)
+			{
+				if (Application.current.meta.exists("company")) company = Application.current.meta.get("company");
+				if (Application.current.meta.exists("file")) file = Application.current.meta.get("file");
+			}
+			var os = Sys.systemName();
+			if (os == "Windows")
+			{
+				var appData = Sys.getEnv("APPDATA");
+				var base = (appData != null) ? appData : (Sys.getEnv("USERPROFILE") + "\\AppData\\Roaming");
+				__applicationStorageDirectory = base + "\\" + company + "\\" + file + "\\";
+			}
+			else
+			{
+				var home = Sys.getEnv("HOME");
+				if (home == null) home = ".";
+				if (os == "Mac") __applicationStorageDirectory = home + "/Library/Application Support/" + company + "/" + file + "/";
+				else __applicationStorageDirectory = home + "/.local/share/" + company + "/" + file + "/";
+			}
+			#else
 			__applicationStorageDirectory = __getDirectory(APPLICATION_STORAGE);
+			#end
 		}
 
 		return __applicationStorageDirectory;
@@ -839,7 +893,18 @@ class System
 	{
 		if (__fontsDirectory == null)
 		{
+			#if jvm
+			var os = Sys.systemName();
+			if (os == "Windows")
+			{
+				var w = Sys.getEnv("WINDIR");
+				__fontsDirectory = (w != null ? w : "C:\\Windows") + "\\Fonts";
+			}
+			else if (os == "Mac") __fontsDirectory = "/System/Library/Fonts";
+			else __fontsDirectory = "/usr/share/fonts";
+			#else
 			__fontsDirectory = __getDirectory(FONTS);
+			#end
 		}
 
 		return __fontsDirectory;

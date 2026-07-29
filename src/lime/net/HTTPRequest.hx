@@ -195,6 +195,8 @@ private typedef HTTPRequestBackend = lime._internal.backend.flash.FlashHTTPReque
 private typedef HTTPRequestBackend = lime._internal.backend.html5.HTML5HTTPRequest;
 #elseif emscripten
 private typedef HTTPRequestBackend = lime._internal.backend.emscripten.EmscriptenHTTPRequest;
+#elseif jvm
+private typedef HTTPRequestBackend = lime._internal.backend.jvm.JVMHTTPRequest;
 #else
 private typedef HTTPRequestBackend = lime._internal.backend.native.NativeHTTPRequest;
 #end

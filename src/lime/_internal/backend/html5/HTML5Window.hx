@@ -1,11 +1,30 @@
 package lime._internal.backend.html5;
 
 import haxe.Timer;
+#if wasmjs
+import wjs.html.webgl.RenderingContext;
+import wjs.html.CanvasElement;
+import wjs.html.DivElement;
+import wjs.html.DragEvent;
+import wjs.html.Element;
+import wjs.html.Event;
+import wjs.html.FocusEvent;
+import wjs.html.InputElement;
+import wjs.html.InputEvent;
+import wjs.html.LinkElement;
+import wjs.html.MouseEvent;
+import wjs.html.Node;
+import wjs.html.TextAreaElement;
+import wjs.html.TouchEvent;
+import wjs.html.ClipboardEvent;
+import wjs.Browser;
+#else
 import js.html.webgl.RenderingContext;
 import js.html.CanvasElement;
 import js.html.DivElement;
 import js.html.DragEvent;
 import js.html.Element;
+import js.html.Event;
 import js.html.FocusEvent;
 import js.html.InputElement;
 import js.html.InputEvent;
@@ -16,6 +35,7 @@ import js.html.TextAreaElement;
 import js.html.TouchEvent;
 import js.html.ClipboardEvent;
 import js.Browser;
+#end
 import lime._internal.graphics.ImageCanvasUtil;
 import lime.app.Application;
 import lime.graphics.opengl.GL;
@@ -103,12 +123,19 @@ class HTML5Window
 			parent.element = attributes.element;
 		}
 
-		var element = parent.element;
+		var element:Dynamic = parent.element;
 
+		#if (wasmjs)
+		if (renderType != DOM)
+		{
+			scale = Browser.window.devicePixelRatio;
+		}
+		#else
 		if (Reflect.hasField(attributes, "allowHighDPI") && attributes.allowHighDPI && renderType != DOM)
 		{
 			scale = Browser.window.devicePixelRatio;
 		}
+		#end
 
 		parent.__scale = scale;
 
@@ -119,10 +146,23 @@ class HTML5Window
 
 		parent.id = windowID++;
 
-		if ((element is CanvasElement))
+		#if (wasmjs)
+		if (renderType != DOM)
+		{
+			canvas = cast wjs.Callbacks.getLimeCanvas();
+			for (mevent in ["mousedown", "mouseenter", "mouseleave", "mousemove", "mouseup", "wheel"]) canvas.addEventListener(mevent, handleMouseEvent, true);
+			canvas.addEventListener("contextmenu", handleContextMenuEvent, true);
+			canvas.addEventListener("touchstart", handleTouchEvent, true);
+			canvas.addEventListener("touchmove", handleTouchEvent, true);
+			canvas.addEventListener("touchend", handleTouchEvent, true);
+			canvas.addEventListener("touchcancel", handleTouchEvent, true);
+		}
+		#else
+		if (element is CanvasElement)
 		{
 			canvas = cast element;
 		}
+		#end
 		else
 		{
 			if (renderType == DOM)
@@ -197,6 +237,7 @@ class HTML5Window
 
 		updateSize();
 
+		#if !(wasmjs)
 		if (element != null)
 		{
 			if (canvas != null)
@@ -232,6 +273,7 @@ class HTML5Window
 			element.addEventListener("gamepadconnected", handleGamepadEvent, true);
 			element.addEventListener("gamepaddisconnected", handleGamepadEvent, true);
 		}
+		#end
 
 		createContext();
 
@@ -252,7 +294,8 @@ class HTML5Window
 
 	public function close():Void
 	{
-		var element = parent.element;
+		#if !(wasmjs)
+		var element:Dynamic = parent.element;
 		if (element != null)
 		{
 			if (canvas != null)
@@ -290,6 +333,7 @@ class HTML5Window
 			element.removeEventListener("gamepadconnected", handleGamepadEvent, true);
 			element.removeEventListener("gamepaddisconnected", handleGamepadEvent, true);
 		}
+		#end
 
 		parent.application.__removeWindow(parent);
 	}
@@ -304,7 +348,11 @@ class HTML5Window
 
 		if (div != null)
 		{
+			#if (wasmjs)
+			context.dom = null;
+			#else
 			context.dom = cast div;
+			#end
 			context.type = DOM;
 			context.version = "";
 		}
@@ -351,7 +399,12 @@ class HTML5Window
 
 			if (webgl == null)
 			{
+				#if (wasmjs)
+				canvas.getContext("2d");
+				context.canvas2D = null;
+				#else
 				context.canvas2D = cast canvas.getContext("2d");
+				#end
 				context.type = CANVAS;
 				context.version = "";
 				context.attributes.hardware = false;
@@ -362,7 +415,7 @@ class HTML5Window
 				webgl = untyped WebGLDebugUtils.makeDebugContext(webgl);
 				#end
 
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				context.webgl = webgl;
 				if (isWebGL2) context.webgl2 = webgl;
 
@@ -446,7 +499,7 @@ class HTML5Window
 		return textInputEnabled;
 	}
 
-	private function handleContextEvent(event:js.html.Event):Void
+	private function handleContextEvent(event:Event):Void
 	{
 		switch (event.type)
 		{
@@ -533,6 +586,29 @@ class HTML5Window
 
 	private function handleFullscreenEvent(event:Dynamic):Void
 	{
+		#if teavm
+		if (tjs.Callbacks.isFullscreenActive())
+		{
+			isFullscreen = true;
+			parent.__fullscreen = true;
+			if (requestedFullscreen)
+			{
+				requestedFullscreen = false;
+				parent.onFullscreen.dispatch();
+			}
+		}
+		else
+		{
+			isFullscreen = false;
+			parent.__fullscreen = false;
+			parent.onRestore.dispatch();
+		}
+		return;
+		#end
+
+		#if (wasmjs)
+		var document:Dynamic = Browser.document;
+		#end
 		var fullscreenElement = untyped (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement
 			|| document.msFullscreenElement);
 
@@ -626,7 +702,7 @@ class HTML5Window
 
 		if (event.type != "wheel")
 		{
-			if (parent.element != null)
+			if (#if (wasmjs) canvas != null #else parent.element != null #end)
 			{
 				if (canvas != null)
 				{
@@ -789,6 +865,23 @@ class HTML5Window
 		}
 		else
 		{
+			#if (wasmjs)
+			var wheelEvent:wjs.html.WheelEvent = cast event;
+			var deltaMode:MouseWheelMode = switch (wheelEvent.deltaMode)
+			{
+				case 0: PIXELS;
+				case 1: LINES;
+				case 2: PAGES;
+				default: UNKNOWN;
+			}
+
+			parent.onMouseWheel.dispatch(wheelEvent.deltaX, -wheelEvent.deltaY, deltaMode);
+
+			if (parent.onMouseWheel.canceled && wheelEvent.cancelable)
+			{
+				wheelEvent.preventDefault();
+			}
+			#else
 			var deltaMode:MouseWheelMode = switch (untyped event.deltaMode)
 			{
 				case 0: PIXELS;
@@ -803,11 +896,26 @@ class HTML5Window
 			{
 				event.preventDefault();
 			}
+			#end
 		}
 	}
 
 	private function handlePasteEvent(event:ClipboardEvent):Void
 	{
+		#if (wasmjs)
+		if (wjs.Callbacks.clipboardEventHasText(cast event))
+		{
+			var text = wjs.Callbacks.clipboardEventGetText(cast event);
+			Clipboard.text = text;
+
+			if (textInputEnabled)
+			{
+				parent.onTextInput.dispatch(text);
+			}
+
+			if (event.cancelable) event.preventDefault();
+		}
+		#else
 		if (untyped event.clipboardData.types.indexOf("text/plain") > -1)
 		{
 			var text = event.clipboardData.getData("text/plain");
@@ -820,9 +928,10 @@ class HTML5Window
 
 			if (event.cancelable) event.preventDefault();
 		}
+		#end
 	}
 
-	private function handleResizeEvent(event:js.html.Event):Void
+	private function handleResizeEvent(event:Event):Void
 	{
 		primaryTouch = null;
 		updateSize();
@@ -834,7 +943,7 @@ class HTML5Window
 
 		var rect = null;
 
-		if (parent.element != null)
+		if (#if (wasmjs) canvas != null #else parent.element != null #end)
 		{
 			if (canvas != null)
 			{
@@ -1072,28 +1181,26 @@ class HTML5Window
 	{
 		if (cursor != value)
 		{
-			if (value == null)
+			var cursorName = if (value == null) "none" else switch (value)
 			{
-				parent.element.style.cursor = "none";
+				case ARROW: "default";
+				case CROSSHAIR: "crosshair";
+				case MOVE: "move";
+				case POINTER: "pointer";
+				case RESIZE_NESW: "nesw-resize";
+				case RESIZE_NS: "ns-resize";
+				case RESIZE_NWSE: "nwse-resize";
+				case RESIZE_WE: "ew-resize";
+				case TEXT: "text";
+				case WAIT: "wait";
+				case WAIT_ARROW: "wait";
+				default: "auto";
 			}
-			else
-			{
-				parent.element.style.cursor = switch (value)
-				{
-					case ARROW: "default";
-					case CROSSHAIR: "crosshair";
-					case MOVE: "move";
-					case POINTER: "pointer";
-					case RESIZE_NESW: "nesw-resize";
-					case RESIZE_NS: "ns-resize";
-					case RESIZE_NWSE: "nwse-resize";
-					case RESIZE_WE: "ew-resize";
-					case TEXT: "text";
-					case WAIT: "wait";
-					case WAIT_ARROW: "wait";
-					default: "auto";
-				}
-			}
+			#if (wasmjs)
+			if (canvas != null) canvas.style.setProperty("cursor", cursorName, null);
+			#else
+			parent.element.style.cursor = cursorName;
+			#end
 
 			cursor = value;
 		}
@@ -1127,8 +1234,36 @@ class HTML5Window
 		return value;
 	}
 
+	#if teavm
+	private var __fullscreenListenerAdded:Bool = false;
+	#end
+
 	public function setFullscreen(value:Bool):Bool
 	{
+		#if teavm
+		if (value)
+		{
+			if (!requestedFullscreen && !isFullscreen)
+			{
+				requestedFullscreen = true;
+				if (!__fullscreenListenerAdded)
+				{
+					__fullscreenListenerAdded = true;
+					tjs.Callbacks.addFullscreenListener(new tjs.Callbacks.EventCbWrap(handleFullscreenEvent));
+				}
+				tjs.Callbacks.requestFullscreenElement();
+			}
+		}
+		else if (isFullscreen)
+		{
+			requestedFullscreen = false;
+			tjs.Callbacks.exitFullscreenDoc();
+		}
+		return value;
+		#else
+		#if (wasmjs)
+		var document:Dynamic = Browser.document;
+		#end
 		if (value)
 		{
 			if (!requestedFullscreen && !isFullscreen)
@@ -1178,6 +1313,7 @@ class HTML5Window
 		}
 
 		return value;
+		#end
 	}
 
 	public function setIcon(image:Image):Void
@@ -1239,15 +1375,20 @@ class HTML5Window
 				textInput.type = 'text';
 				#else
 				// use password instead of text to avoid IME issues on Android
-				textInput.type = Browser.navigator.userAgent.indexOf("Android") >= 0 ? 'password' : 'text';
+				textInput.type = (Browser.navigator.userAgent.indexOf("Android") >= 0) ? 'password' : 'text';
 				#end
 				textInput.style.position = 'absolute';
 				textInput.style.opacity = "0";
 				textInput.style.color = "transparent";
 				textInput.value = dummyCharacter; // See: handleInputEvent()
 
+				#if (wasmjs)
+				(cast textInput : wjs._jso.HTMLInputElement).setAttribute("autocapitalize", "off");
+				(cast textInput : wjs._jso.HTMLInputElement).setAttribute("autocorrect", "off");
+				#else
 				untyped textInput.autocapitalize = "off";
 				untyped textInput.autocorrect = "off";
+				#end
 				textInput.autocomplete = "off";
 
 				// TODO: Position for mobile browsers better
@@ -1267,14 +1408,25 @@ class HTML5Window
 					textInput.style.height = '1px';
 				}
 
+				#if (wasmjs)
+				(cast textInput.style : wjs._jso.CSSStyleDeclaration).setProperty("pointer-events", "none");
+				#else
 				untyped (textInput.style).pointerEvents = 'none';
+				#end
 				textInput.style.zIndex = "-10000000";
 			}
 
+			#if (wasmjs)
+			if (wjs.Callbacks.jsIsNull(cast textInput.parentNode))
+			{
+				wjs.Callbacks.appendToLimeContainer(cast textInput);
+			}
+			#else
 			if (textInput.parentNode == null)
 			{
 				parent.element.appendChild(textInput);
 			}
+			#end
 
 			if (!textInputEnabled)
 			{
@@ -1352,6 +1504,16 @@ class HTML5Window
 	private function updateSize():Void
 	{
 		if (!parent.__resizable) return;
+
+		#if (wasmjs)
+		if (wjs.Callbacks.fitLimeCanvas(scale))
+		{
+			parent.__width = wjs.Callbacks.limeCanvasLogicalWidth();
+			parent.__height = wjs.Callbacks.limeCanvasLogicalHeight();
+			parent.onResize.dispatch(parent.__width, parent.__height);
+		}
+		return;
+		#end
 
 		var elementWidth:Float;
 		var elementHeight:Float;

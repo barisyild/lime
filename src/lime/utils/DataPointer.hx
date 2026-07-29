@@ -23,7 +23,28 @@ abstract DataPointer(DataPointerType) to DataPointerType
 		this = data;
 	}
 
-	#if (lime_cffi && !js && !doc_gen)
+	#if jvm
+	@:noCompletion private static var __jvmReg:Map<Int, {bytes:haxe.io.Bytes, offset:Int}> = new Map();
+	@:noCompletion private static var __jvmId:Int = (1 << 28);
+
+	@:noCompletion public static function __jvmRegister(bytes:haxe.io.Bytes, offset:Int):Float
+	{
+		if (bytes == null) return 0;
+		var id = ++__jvmId;
+		__jvmReg.set(id, {bytes: bytes, offset: offset});
+		return id;
+	}
+
+	@:noCompletion public static function __jvmLookup(id:Float):Null<{bytes:haxe.io.Bytes, offset:Int}>
+	{
+		var k = Std.int(id);
+		var r = __jvmReg.get(k);
+		if (r != null) __jvmReg.remove(k);
+		return r;
+	}
+	#end
+
+	#if ((lime_cffi || jvm) && !js && !doc_gen)
 	@:from @:noCompletion private static function fromInt(value:Int):DataPointer
 	{
 		#if (lime_cffi && !macro)
@@ -61,7 +82,10 @@ abstract DataPointer(DataPointerType) to DataPointerType
 
 	@:from @:noCompletion public static function fromBytesPointer(pointer:BytePointer):DataPointer
 	{
-		#if (cpp && !doc_gen)
+		#if jvm
+		if (pointer == null || pointer.bytes == null) return cast 0;
+		return new DataPointer(__jvmRegister(pointer.bytes, pointer.offset));
+		#elseif (cpp && !doc_gen)
 		if (pointer == null || pointer.bytes == null) return cast 0;
 		return Pointer.arrayElem(pointer.bytes.b, 0).add(pointer.offset);
 		#elseif (lime_cffi && !macro)
@@ -75,7 +99,10 @@ abstract DataPointer(DataPointerType) to DataPointerType
 
 	@:from @:noCompletion public static function fromArrayBufferView(arrayBufferView:ArrayBufferView):DataPointer
 	{
-		#if (cpp && !doc_gen)
+		#if jvm
+		if (arrayBufferView == null) return cast 0;
+		return new DataPointer(__jvmRegister(arrayBufferView.buffer, arrayBufferView.byteOffset));
+		#elseif (cpp && !doc_gen)
 		if (arrayBufferView == null) return cast 0;
 		return Pointer.arrayElem(arrayBufferView.buffer.b, 0).add(arrayBufferView.byteOffset);
 		#elseif (lime_cffi && !js && !macro)
@@ -99,7 +126,10 @@ abstract DataPointer(DataPointerType) to DataPointerType
 
 	@:from @:noCompletion public static function fromBytes(bytes:Bytes):DataPointer
 	{
-		#if (cpp && !doc_gen)
+		#if jvm
+		if (bytes == null) return cast 0;
+		return new DataPointer(__jvmRegister(bytes, 0));
+		#elseif (cpp && !doc_gen)
 		if (bytes == null) return cast 0;
 		return Pointer.arrayElem(bytes.b, 0);
 		#elseif (lime_cffi && !macro)
@@ -247,7 +277,7 @@ abstract DataPointer(DataPointerType) to DataPointerType
 	}
 }
 
-#if (lime_cffi && !js)
+#if ((lime_cffi || jvm) && !js)
 private typedef DataPointerType = Float;
 #else
 private typedef DataPointerType = Int;

@@ -1,7 +1,16 @@
 package lime.graphics;
 
-#if (!lime_doc_gen || lime_canvas)
-#if (lime_canvas && (lime_doc_gen || !doc_gen))
+#if (!lime_doc_gen || lime_canvas || (wasmjs))
+#if (wasmjs)
+@:forward
+abstract Canvas2DRenderContext(wjs.html.CanvasRenderingContext2D) from wjs.html.CanvasRenderingContext2D to wjs.html.CanvasRenderingContext2D
+{
+	@:from private static function fromRenderContext(context:RenderContext):Canvas2DRenderContext
+	{
+		return null;
+	}
+}
+#elseif (lime_canvas && (lime_doc_gen || !doc_gen))
 import js.html.CanvasRenderingContext2D;
 
 /**

@@ -1,7 +1,7 @@
 package lime.graphics;
 
 #if (!lime_doc_gen || lime_opengl || lime_opengles)
-#if (doc_gen || (sys && lime_cffi))
+#if (doc_gen || (sys && lime_cffi && !(wasmjs)))
 import lime.graphics.opengl.*;
 
 /**

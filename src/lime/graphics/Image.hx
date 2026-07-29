@@ -294,7 +294,7 @@ class Image
 	{
 		if (buffer != null)
 		{
-			#if (js && html5)
+			#if ((js && html5) || (wasmjs))
 			if (type == CANVAS)
 			{
 				ImageCanvasUtil.convertToCanvas(this);
@@ -331,7 +331,7 @@ class Image
 				ImageCanvasUtil.colorTransform(this, rect, colorMatrix);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -368,7 +368,7 @@ class Image
 				ImageCanvasUtil.copyChannel(this, sourceImage, sourceRect, destPoint, sourceChannel, destChannel);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				ImageCanvasUtil.convertToData(sourceImage);
 				#end
@@ -481,7 +481,7 @@ class Image
 				}
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				ImageCanvasUtil.convertToData(sourceImage);
 				if (alphaImage != null) ImageCanvasUtil.convertToData(alphaImage);
@@ -547,7 +547,7 @@ class Image
 				ImageCanvasUtil.fillRect(this, rect, color, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -591,7 +591,7 @@ class Image
 				ImageCanvasUtil.floodFill(this, x, y, color, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -747,7 +747,7 @@ class Image
 		switch (type)
 		{
 			case CANVAS:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -782,7 +782,7 @@ class Image
 				return ImageCanvasUtil.getPixel(this, x, y, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -824,7 +824,7 @@ class Image
 				return ImageCanvasUtil.getPixel32(this, x, y, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -865,7 +865,7 @@ class Image
 				return ImageCanvasUtil.getPixels(this, rect, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -1001,7 +1001,34 @@ class Image
 		loader.loadBytes(bytes.getData());
 
 		return promise.future;
-		#else
+		#elseif (wasmjs)
+		var type = "";
+		if (__isPNG(bytes)) type = "image/png";
+		else if (__isJPG(bytes)) type = "image/jpeg";
+		else if (__isGIF(bytes)) type = "image/gif";
+		else if (__isWebP(bytes)) type = "image/webp";
+		else return Future.withValue(null);
+
+		var promise = new lime.app.Promise<Image>();
+		var image = wjs.Callbacks.createImage();
+		var url = wjs.Callbacks.blobUrl(cast wjs._jso.Int8Array.copyFromJavaArray(bytes.getData()), type);
+		wjs.Callbacks.addEventListener(cast image, "load", new wjs.Callbacks.EventCbWrap(function(event)
+		{
+			wjs.Callbacks.revokeObjectURL(url);
+			var w = image.getWidth();
+			var h = image.getHeight();
+			var buffer = new ImageBuffer(null, w, h);
+			buffer.__srcImage = image;
+			promise.complete(new Image(buffer, 0, 0, w, h, null, CANVAS));
+		}));
+		wjs.Callbacks.addEventListener(cast image, "error", new wjs.Callbacks.EventCbWrap(function(event)
+		{
+			wjs.Callbacks.revokeObjectURL(url);
+			promise.error("Error loading image");
+		}));
+		image.setSrc(url);
+		return promise.future;
+				#else
 		return new Future(fromBytes.bind(bytes), true);
 		#end
 	}
@@ -1078,7 +1105,7 @@ class Image
 				ImageCanvasUtil.merge(this, sourceImage, sourceRect, destPoint, redMultiplier, greenMultiplier, blueMultiplier, alphaMultiplier);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				ImageCanvasUtil.convertToData(sourceImage);
 				#end
@@ -1177,7 +1204,7 @@ class Image
 				ImageCanvasUtil.setPixel(this, x, y, color, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -1214,7 +1241,7 @@ class Image
 				ImageCanvasUtil.setPixel32(this, x, y, color, format);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -1253,7 +1280,7 @@ class Image
 				ImageCanvasUtil.setPixels(this, rect, bytePointer, format, endian);
 
 			case DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				#end
 
@@ -1355,7 +1382,7 @@ class Image
 		switch (type)
 		{
 			case CANVAS, DATA:
-				#if (js && html5)
+				#if ((js && html5) || (wasmjs))
 				ImageCanvasUtil.convertToData(this);
 				ImageCanvasUtil.convertToData(sourceImage);
 				#end
@@ -1482,6 +1509,65 @@ class Image
 
 		__fromBase64(Base64.encode(bytes), type, onload);
 		return true;
+		#elseif jvm
+		if (bytes == null || bytes.length == 0) return false;
+		if (bytes.length > 3 && bytes.get(0) == 0xFF && bytes.get(1) == 0xD8)
+		{
+			var jpg = try lime._internal.format.JPEGReader.decode(bytes) catch (e:Dynamic) null;
+			if (jpg == null) return false;
+			var jpixels = jpg.pixels; // RGBA, alpha = 255
+			#if wasmjs
+			var jbuffer = new ImageBuffer(new UInt8Array(jpixels), jpg.width, jpg.height, 32, lime.graphics.PixelFormat.RGBA32);
+			#else
+			for (i in 0...jpg.width * jpg.height)
+			{
+				var r = jpixels.get(i * 4);
+				jpixels.set(i * 4, jpixels.get(i * 4 + 2));
+				jpixels.set(i * 4 + 2, r);
+			}
+			var jbuffer = new ImageBuffer(new UInt8Array(jpixels), jpg.width, jpg.height, 32, lime.graphics.PixelFormat.BGRA32);
+			#end
+			jbuffer.premultiplied = true; // opaque -> premultiply is a no-op; matches the PNG path's flag
+			__fromImageBuffer(jbuffer);
+			if (onload != null) onload(this);
+			return true;
+		}
+		var data = try new Reader(new haxe.io.BytesInput(bytes)).read() catch (e:Dynamic) null;
+		if (data == null) return false;
+		var header = Tools.getHeader(data);
+		var width = header.width, height = header.height;
+		var pixels = Tools.extract32(data);
+		#if wasmjs
+		for (i in 0...width * height)
+		{
+			var b = pixels.get(i * 4);
+			var r = pixels.get(i * 4 + 2);
+			var a = pixels.get(i * 4 + 3);
+			if (a != 255)
+			{
+				r = Std.int((r * a) / 255);
+				b = Std.int((b * a) / 255);
+				pixels.set(i * 4 + 1, Std.int((pixels.get(i * 4 + 1) * a) / 255)); // G
+			}
+			pixels.set(i * 4, r);
+			pixels.set(i * 4 + 2, b);
+		}
+		var buffer = new ImageBuffer(new UInt8Array(pixels), width, height, 32, lime.graphics.PixelFormat.RGBA32);
+		#else
+		for (i in 0...width * height)
+		{
+			var a = pixels.get(i * 4 + 3);
+			if (a == 255) continue;
+			pixels.set(i * 4, Std.int((pixels.get(i * 4) * a) / 255)); // B
+			pixels.set(i * 4 + 1, Std.int((pixels.get(i * 4 + 1) * a) / 255)); // G
+			pixels.set(i * 4 + 2, Std.int((pixels.get(i * 4 + 2) * a) / 255)); // R
+		}
+		var buffer = new ImageBuffer(new UInt8Array(pixels), width, height, 32, lime.graphics.PixelFormat.BGRA32);
+		#end
+		buffer.premultiplied = true;
+		__fromImageBuffer(buffer);
+		if (onload != null) onload(this);
+		return true;
 		#elseif (lime_cffi && !macro)
 		if (bytes == null || bytes.length == 0)
 		{
@@ -1521,7 +1607,19 @@ class Image
 
 	@:noCompletion private function __fromFile(path:String, onload:Image->Void = null, onerror:Void->Void = null):Bool
 	{
-		#if (js && html5)
+		#if jvm
+		try
+		{
+			var bytes = sys.io.File.getBytes(path);
+			return __fromBytes(bytes, onload);
+		}
+		catch (e:Dynamic)
+		{
+			lime.utils.Log.warn("[jvm-img] fromFile FAILED path=" + path + " : " + e);
+			if (onerror != null) onerror();
+			return false;
+		}
+		#elseif (js && html5)
 		var image:JSImage = untyped #if haxe4 js.Syntax.code #else __js__ #end ('new window.Image ()');
 
 		#if !display
@@ -1688,7 +1786,7 @@ class Image
 	{
 		if (buffer.data == null && buffer.width > 0 && buffer.height > 0)
 		{
-			#if (js && html5)
+			#if ((js && html5) || (wasmjs))
 			ImageCanvasUtil.convertToData(this);
 			#elseif flash
 			var pixels = buffer.__srcBitmapData.getPixels(buffer.__srcBitmapData.rect);
@@ -1757,7 +1855,7 @@ class Image
 			switch (type)
 			{
 				case CANVAS:
-					#if (js && html5)
+					#if ((js && html5) || (wasmjs))
 					ImageCanvasUtil.convertToData(this);
 					#end
 					ImageDataUtil.resizeBuffer(this, newWidth, newHeight);
@@ -1794,7 +1892,7 @@ class Image
 			switch (type)
 			{
 				case CANVAS, DATA:
-					#if (js && html5)
+					#if ((js && html5) || (wasmjs))
 					ImageCanvasUtil.convertToData(this);
 					#end
 
@@ -1809,7 +1907,7 @@ class Image
 			switch (type)
 			{
 				case DATA:
-					#if (js && html5)
+					#if ((js && html5) || (wasmjs))
 					ImageCanvasUtil.convertToData(this);
 					#end
 
@@ -1830,7 +1928,7 @@ class Image
 
 	@:noCompletion private function get_src():Dynamic
 	{
-		#if (js && html5)
+		#if ((js && html5) || (wasmjs))
 		if (buffer.__srcCanvas == null && (buffer.data != null || type == DATA))
 		{
 			ImageCanvasUtil.convertToCanvas(this);

@@ -51,7 +51,40 @@ class Joystick
 		if (joystick != null) joystick.onDisconnect.dispatch();
 	}
 
-	#if (js && html5)
+	#if (wasmjs)
+	@:noCompletion private static function __getDeviceData():Array<Dynamic>
+	{
+		var count = wjs.Callbacks.gamepadPoll();
+		var res:Array<Dynamic> = [];
+
+		for (i in 0...count)
+		{
+			if (!wjs.Callbacks.gamepadPresent(i))
+			{
+				res.push(null);
+				continue;
+			}
+
+			var buttons:Array<Dynamic> = [];
+
+			for (j in 0...wjs.Callbacks.gamepadButtonCount(i))
+			{
+				buttons.push({value: wjs.Callbacks.gamepadButtonValue(i, j)});
+			}
+
+			var axes:Array<Float> = [];
+
+			for (j in 0...wjs.Callbacks.gamepadAxisCount(i))
+			{
+				axes.push(wjs.Callbacks.gamepadAxisValue(i, j));
+			}
+
+			res.push({connected: wjs.Callbacks.gamepadConnected(i), mapping: wjs.Callbacks.gamepadMapping(i), buttons: buttons, axes: axes});
+		}
+
+		return res;
+	}
+	#elseif (js && html5)
 	@:noCompletion private static function __getDeviceData():Array<js.html.Gamepad>
 	{
 		var res:Array<js.html.Gamepad> = null;

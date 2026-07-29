@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>::APP_TITLE::</title>
+<style>html,body{margin:0;padding:0;overflow:hidden;background:#000;width:100%;height:100%}
+#openfl-content{width:100%;height:100%}
+canvas{display:block}</style>
+</head>
+<body>
+<div id="openfl-content"><canvas id="canvas"></canvas></div>
+<script>(function(){var c=document.getElementById("canvas"),p=c.parentElement;c.width=p.clientWidth||window.innerWidth;c.height=p.clientHeight||window.innerHeight;})();</script>
+<script src="::APP_FILE::.js?v=::BUILD_TS::"></script>
+<script>globalThis.lime=globalThis.lime||{};if(!globalThis.lime.embed)globalThis.lime.embed=function(){globalThis.__limePendingEmbed=Array.prototype.slice.call(arguments);};</script>
+<script type="module">
+Error.stackTraceLimit=100;
+(function(){ const wi=WebAssembly.instantiate; WebAssembly.instantiate=function(b,imp){ if(imp && !imp.lime) imp.lime=new Proxy({},{get:(t,p)=>typeof p==="string"?function(){throw new Error("limejvm removed: "+p);}:undefined}); return wi.apply(this,arguments); }; })();
+globalThis.__limePrint=(t)=>console.log("[em]",t);
+let teavmRef=null;
+globalThis.__limeUpcalls={
+  teavm_invoke:(i)=>{ if(teavmRef) teavmRef.instance.exports.limeInvoke(i); },
+  teavm_set_field_f64:(o,n,v)=>{ if(teavmRef) teavmRef.instance.exports.limeSetFieldF64(o,n,v); },
+  teavm_set_field_i32:(o,n,v)=>{ if(teavmRef) teavmRef.instance.exports.limeSetFieldI32(o,n,v); },
+  teavm_set_field_str:(o,n,v)=>{ if(teavmRef) teavmRef.instance.exports.limeSetFieldStr(o,n,v); }
+};
+(function(){
+  const VALID_CAPS=new Set([0x0BE2,0x0B44,0x0B71,0x0BD0,0x8037,0x809E,0x80A0,0x0C11,0x0B90,0x8C89]);
+  for (const C of [globalThis.WebGLRenderingContext, globalThis.WebGL2RenderingContext].filter(Boolean)) {
+    const P=C.prototype, isW2=(globalThis.WebGL2RenderingContext && C===globalThis.WebGL2RenderingContext);
+    const en=P.enable, di=P.disable, rs=P.renderbufferStorage, fr=P.framebufferRenderbuffer;
+    P.enable=function(cap){ if(!VALID_CAPS.has(cap)) return; return en.call(this,cap); };
+    P.disable=function(cap){ if(!VALID_CAPS.has(cap)) return; return di.call(this,cap); };
+    P.renderbufferStorage=function(target,fmt,w,h){ if(fmt===0x81A5||fmt===0x81A6||fmt===0x81A7){ return rs.call(this,target,(isW2?0x88F0:0x84F9),w,h); } return rs.call(this,target,fmt,w,h); };
+    P.framebufferRenderbuffer=function(target,att,rbt,rb){ if(att===0x8D00) att=0x821A; else if(att===0x8D20) return; return fr.call(this,target,att,rbt,rb); };
+  }
+})();
+globalThis.lime.embed = function(projectName, elementId, width, height, config){
+  if (globalThis.__limeEmbed) return;
+  globalThis.__limeEmbed = { project: String(projectName||""), element: String(elementId||"openfl-content"), width: width|0, height: height|0,
+    rootPath: String((config&&config.rootPath)||""), parametersJson: JSON.stringify((config&&config.parameters)||{}) };
+  var host = document.getElementById(globalThis.__limeEmbed.element) || document.body;
+  var c = host.querySelector("canvas"); if(!c){ c=document.createElement("canvas"); host.appendChild(c); } c.id="canvas";
+  var pw=host.clientWidth||window.innerWidth, ph=host.clientHeight||window.innerHeight;
+  c.width=(width|0)||pw; c.height=(height|0)||ph;
+  globalThis.__limeCanvas=c;
+  __limeBoot();
+};
+async function __limeBoot(){
+  const v=Date.now();
+  const bytes=new Uint8Array(await (await fetch("classes.wasm?v="+v,{cache:"no-cache"})).arrayBuffer());
+  const teavm=await window.TeaVM.wasmGC.load(bytes,{
+    stackDeobfuscator:{enabled:true, path:"classes.wasm-deobfuscator.wasm?v="+v, externalInfoPath:"classes.wasm.teadbg?v="+v}
+  });
+  teavmRef=teavm;
+  teavm.exports.main([]);
+}
+const __pe=globalThis.__limePendingEmbed;
+if(__pe){ globalThis.lime.embed.apply(null,__pe); }
+else { globalThis.lime.embed("::APP_TITLE::", "openfl-content", 0, 0, { rootPath: "./", parameters: {} }); }
+</script>
+</body>
+</html>

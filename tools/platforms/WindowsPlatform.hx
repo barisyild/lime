@@ -173,9 +173,9 @@ class WindowsPlatform extends PlatformTarget
 		{
 			targetType = "cs";
 		}
-		else if (project.targetFlags.exists("java"))
+		else if (project.targetFlags.exists("jvm"))
 		{
-			targetType = "java";
+			targetType = "jvm";
 		}
 		else if (project.targetFlags.exists("winrt"))
 		{
@@ -488,12 +488,14 @@ class WindowsPlatform extends PlatformTarget
 				CSHelper.addGUID(txtPath, GUID.uuid());
 				CSHelper.compile(project, targetDirectory + "/obj", applicationDirectory + project.app.file, "x86", "desktop");
 			}
-			else if (targetType == "java")
+			else if (targetType == "jvm")
 			{
 				var libPath = Path.combine(Haxelib.getPath(new Haxelib("lime")), "templates/java/lib/");
 
-				System.runCommand("", "haxe", [hxml, "-java-lib", libPath + "disruptor.jar", "-java-lib", libPath + "lwjgl.jar"]);
-				// System.runCommand ("", "haxe", [ hxml ]);
+				if (sys.FileSystem.exists(libPath + "lwjgl.jar"))
+					System.runCommand("", "haxe", [hxml, "-java-lib", libPath + "disruptor.jar", "-java-lib", libPath + "lwjgl.jar"]);
+				else
+					System.runCommand("", "haxe", [hxml]);
 
 				if (noOutput) return;
 
@@ -757,7 +759,7 @@ class WindowsPlatform extends PlatformTarget
 					hxml.neko = "_.n";
 				case "cppia":
 					hxml.cppia = "_.cppia";
-				case "java":
+				case "jvm":
 					hxml.java = "_";
 				case "nodejs", "winjs":
 					hxml.js = "_.js";
@@ -930,7 +932,7 @@ class WindowsPlatform extends PlatformTarget
 
 			// HTML5Helper.launch (project, targetDirectory + "/bin");
 		}
-		else if (targetType == "java")
+		else if (targetType == "jvm")
 		{
 			System.runCommand(applicationDirectory, "java", ["-jar", project.app.file + ".jar"].concat(arguments));
 		}

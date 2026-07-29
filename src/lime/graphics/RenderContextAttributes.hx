@@ -34,7 +34,7 @@ typedef RenderContextAttributes =
 	**/
 	@:optional var hardware:Bool;
 
-	#if html5
+	#if (html5 || (wasmjs))
 	/**
 		Whether to preserve the `HTMLCanvas`'s image data after rendering
 	**/

@@ -45,7 +45,20 @@ class Deflate
 
 	public static function decompress(bytes:Bytes):Bytes
 	{
-		#if (lime_cffi && !macro)
+		#if jvm
+		var input = new haxe.io.BytesInput(bytes);
+		var impl = new haxe.zip.InflateImpl(input, false, false);
+		var bufsize = 65536;
+		var buf = Bytes.alloc(bufsize);
+		var output = new haxe.io.BytesBuffer();
+		while (true)
+		{
+			var len = impl.readBytes(buf, 0, bufsize);
+			output.addBytes(buf, 0, len);
+			if (len < bufsize) break;
+		}
+		return output.getBytes();
+		#elseif (lime_cffi && !macro)
 		#if !cs
 		return NativeCFFI.lime_deflate_decompress(bytes, Bytes.alloc(0));
 		#else

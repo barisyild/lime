@@ -818,6 +818,8 @@ class Window
 @:noCompletion private typedef WindowBackend = lime._internal.backend.flash.FlashWindow;
 #elseif (js && html5)
 @:noCompletion private typedef WindowBackend = lime._internal.backend.html5.HTML5Window;
+#elseif (jvm && wasmjs)
+@:noCompletion private typedef WindowBackend = lime._internal.backend.html5.HTML5Window;
 #else
 @:noCompletion private typedef WindowBackend = lime._internal.backend.native.NativeWindow;
 #end

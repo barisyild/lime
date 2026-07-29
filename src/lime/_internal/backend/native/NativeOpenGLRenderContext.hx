@@ -34,6 +34,7 @@ import lime.utils.UInt32Array;
 @:allow(lime.ui.Window)
 @:access(lime._internal.backend.native.NativeCFFI)
 @:access(lime.graphics.opengl)
+#if jvm @:nativeGen #end
 class NativeOpenGLRenderContext
 {
 	private static var __extensionObjects:Map<String, Dynamic>;
@@ -822,14 +823,20 @@ class NativeOpenGLRenderContext
 
 	public function bufferData(target:Int, size:Int, srcData:DataPointer, usage:Int):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(srcData);
+		lime.jni.Lime.lime_gl_buffer_data_jvm(target, size, d != null ? d.bytes.getData() : null, d != null ? d.offset : 0, usage);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_buffer_data(target, size, srcData, usage);
 		#end
 	}
 
 	public function bufferSubData(target:Int, dstByteOffset:Int, size:Int, srcData:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(srcData);
+		lime.jni.Lime.lime_gl_buffer_sub_data_jvm(target, dstByteOffset, size, d != null ? d.bytes.getData() : null, d != null ? d.offset : 0);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_buffer_sub_data(target, dstByteOffset, size, srcData);
 		#end
 	}
@@ -2804,7 +2811,10 @@ class NativeOpenGLRenderContext
 
 	public function texImage2D(target:Int, level:Int, internalformat:Int, width:Int, height:Int, border:Int, format:Int, type:Int, data:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(data);
+		lime.jni.Lime.lime_gl_tex_image_2d_jvm(target, level, internalformat, width, height, border, format, type, d != null ? d.bytes.getData() : null, d != null ? d.offset : 0);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_tex_image_2d(target, level, internalformat, width, height, border, format, type, data);
 		#end
 	}
@@ -2887,7 +2897,10 @@ class NativeOpenGLRenderContext
 
 	public function uniform1fv(location:GLUniformLocation, count:Int, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(1, location, count, false, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform1fv(location, count, v);
 		#end
 	}
@@ -2929,7 +2942,10 @@ class NativeOpenGLRenderContext
 
 	public function uniform2fv(location:GLUniformLocation, count:Int, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(2, location, count, false, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform2fv(location, count, v);
 		#end
 	}
@@ -2971,7 +2987,10 @@ class NativeOpenGLRenderContext
 
 	public function uniform3fv(location:GLUniformLocation, count:Int, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(3, location, count, false, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform3fv(location, count, v);
 		#end
 	}
@@ -3013,7 +3032,10 @@ class NativeOpenGLRenderContext
 
 	public function uniform4fv(location:GLUniformLocation, count:Int, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(4, location, count, false, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform4fv(location, count, v);
 		#end
 	}
@@ -3055,7 +3077,10 @@ class NativeOpenGLRenderContext
 
 	public function uniformMatrix2fv(location:GLUniformLocation, count:Int, transpose:Bool, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(12, location, count, transpose, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform_matrix2fv(location, count, transpose, v);
 		#end
 	}
@@ -3076,7 +3101,10 @@ class NativeOpenGLRenderContext
 
 	public function uniformMatrix3fv(location:GLUniformLocation, count:Int, transpose:Bool, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(13, location, count, transpose, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform_matrix3fv(location, count, transpose, v);
 		#end
 	}
@@ -3097,7 +3125,10 @@ class NativeOpenGLRenderContext
 
 	public function uniformMatrix4fv(location:GLUniformLocation, count:Int, transpose:Bool, v:DataPointer):Void
 	{
-		#if (lime_cffi && (lime_opengl || lime_opengles) && !macro)
+		#if jvm
+		var d = lime.utils.DataPointer.__jvmLookup(v);
+		if (d != null) lime.jni.Lime.lime_gl_uniform_jvm(14, location, count, transpose, d.bytes.getData(), d.offset);
+		#elseif (lime_cffi && (lime_opengl || lime_opengles) && !macro)
 		NativeCFFI.lime_gl_uniform_matrix4fv(location, count, transpose, v);
 		#end
 	}

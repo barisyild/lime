@@ -1,6 +1,6 @@
 package haxe;
 
-#if (!lime_cffi || macro)
+#if ((!lime_cffi && !wasmjs) || macro)
 // Original haxe.Timer class
 
 /*

@@ -402,10 +402,14 @@ class ThreadPool extends WorkOutput
 			throw "Call run() only from the main thread.";
 		}
 
+		#if wasmjs
+		mode = SINGLE_THREADED;
+		#else
 		if (mode == null)
 		{
 			mode = this.mode;
 		}
+		#end
 
 		if (doWork == null)
 		{

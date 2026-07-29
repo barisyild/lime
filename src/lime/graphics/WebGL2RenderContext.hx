@@ -1,6 +1,11 @@
 package lime.graphics;
 
-#if (lime_webgl && !doc_gen)
+#if (wasmjs)
+import lime.graphics.opengl.*;
+@:forward
+@:transitive
+abstract WebGL2RenderContext(wjs.html.webgl.WebGL2RenderingContext) from wjs.html.webgl.WebGL2RenderingContext to wjs.html.webgl.WebGL2RenderingContext {}
+#elseif (lime_webgl && !doc_gen)
 import lime._internal.backend.html5.HTML5WebGL2RenderContext;
 import lime.graphics.opengl.*;
 import lime.utils.DataPointer;

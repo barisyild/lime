@@ -10,7 +10,7 @@ import haxe.ds.ObjectMap;
 @:fileXml('tags="haxe,release"')
 @:noDebug
 #end
-#if !js @:generic #end class ObjectPool<T>
+#if (!js && !jvm) @:generic #end class ObjectPool<T>
 {
 	/**
   		The number of active objects in the pool.

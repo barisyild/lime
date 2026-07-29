@@ -1,0 +1,11 @@
+{
+	"resources": {
+		"includes": [
+			{ "pattern": ".*\\.json$" },
+			{ "pattern": "manifest/.*" },
+			{ "pattern": "assets/.*" },
+			{ "pattern": "__ASSET__.*" }
+		]
+	},
+	"bundles": []
+}

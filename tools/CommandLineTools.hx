@@ -249,9 +249,9 @@ class CommandLineTools
 							target = System.hostPlatform;
 							targetFlags.set("cppia", "");
 
-						case "java":
+						case "jvm":
 							target = System.hostPlatform;
-							targetFlags.set("java", "");
+							targetFlags.set("jvm", "");
 
 						case "nodejs":
 							target = System.hostPlatform;
@@ -945,7 +945,7 @@ class CommandLineTools
 			Log.println("  \x1b[1mneko\x1b[0m -- Alias for host platform (using \x1b[1m-neko\x1b[0m)");
 			Log.println("  \x1b[1mmacos\x1b[0m -- Alias for \x1b[1mmac\x1b[0m");
 			Log.println("  \x1b[1mnodejs\x1b[0m -- Alias for host platform (using \x1b[1m-nodejs\x1b[0m)");
-			Log.println("  \x1b[1mjava\x1b[0m -- Alias for host platform (using \x1b[1m-java\x1b[0m)");
+			Log.println("  \x1b[1mjvm\x1b[0m -- Alias for host platform (using \x1b[1m-java\x1b[0m)");
 			Log.println("  \x1b[1mcs\x1b[0m -- Alias for host platform (using \x1b[1m-cs\x1b[0m)");
 			Log.println("  \x1b[1mhl/hashlink\x1b[0m -- Alias for host platform (using \x1b[1m-hl\x1b[0m)");
 			Log.println("  \x1b[1mhlc\x1b[0m -- Alias for host platform (using \x1b[1m-hlc\x1b[0m)");
@@ -1556,9 +1556,9 @@ class CommandLineTools
 				target = System.hostPlatform;
 				targetFlags.set("cppia", "");
 
-			case "java":
+			case "jvm":
 				target = System.hostPlatform;
-				targetFlags.set("java", "");
+				targetFlags.set("jvm", "");
 
 			case "nodejs":
 				target = System.hostPlatform;

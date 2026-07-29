@@ -1,7 +1,9 @@
 package lime.graphics.opengl;
 
 #if (!lime_doc_gen || lime_opengl || lime_opengles || lime_webgl)
-#if ((lime_opengl || lime_opengles) && !doc_gen)
+#if (wasmjs)
+typedef GLSampler = wjs.html.webgl.Sampler;
+#elseif ((lime_opengl || lime_opengles) && !doc_gen)
 import lime.graphics.opengl.GL;
 
 @:forward(id)

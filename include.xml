@@ -12,8 +12,9 @@
 
 	<define name="lime-cairo" if="native" />
 	<define name="lime-canvas" if="html5" />
-	<define name="lime-cffi" if="native" />
-	<define name="lime-curl" unless="lime-console || lime-switch || emscripten || flash || html5" />
+	<define name="lime-cffi" if="native" unless="teavm" />
+	<define name="lime-jni" if="java || jvm" />
+	<define name="lime-curl" unless="lime-console || lime-switch || emscripten || flash || html5 || java || jvm" />
 	<define name="lime-dom" if="html5" />
 	<define name="lime-harfbuzz" if="native" />
 	<define name="lime-howlerjs" if="html5" />
@@ -33,7 +34,20 @@
 
 	<templatePath name="templates" />
 	<source path="externs/air" if="air" />
+	<source path="std-shadow/java" if="java" />
 	<haxeflag name="--macro" value="allowPackage('sys')" if="air" />
+	<haxeflag name="--macro" value="addGlobalMetadata('haxe.Timer', '@:build(lime._internal.macros.TimerPatch.build())')" if="teavm" />
+
+	<haxedef name="wasmjs" if="teavm" />
+
+	<section if="jvm">
+		<reflection pattern="lime.net.*" mode="dynamic" />
+		<reflection pattern="lime.utils.ArrayBufferView" mode="dynamic" />
+		<reflection pattern="lime.graphics.opengl.ext.*" mode="dynamic" />
+		<reflection pattern="haxe.*" mode="dynamic" />
+		<reflection pattern="sys.*" mode="dynamic" />
+		<reflection pattern="jvm.*" mode="dynamic" />
+	</section>
 	<sample path="samples" unless="openfl" />
 
 	<haxelib name="nodejs" if="nodejs" />

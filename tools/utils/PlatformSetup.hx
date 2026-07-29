@@ -411,7 +411,7 @@ class PlatformSetup
 						setupWindows();
 					}
 
-				case "neko", "cs", "uwp", "winjs", "nodejs", "java":
+				case "neko", "cs", "uwp", "winjs", "nodejs", "jvm":
 					Log.println("\x1b[0;3mNo additional configuration is required.\x1b[0m");
 
 				case "hl", "hashlink":

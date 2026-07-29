@@ -80,7 +80,11 @@ class WorkOutput
 		__jobComplete.value = false;
 
 		#if lime_threads
+		#if wasmjs
+		this.mode = SINGLE_THREADED;
+		#else
 		this.mode = mode != null ? mode : #if html5 SINGLE_THREADED #else MULTI_THREADED #end;
+		#end
 		#end
 	}
 

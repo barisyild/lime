@@ -585,7 +585,7 @@ class GL
 	public static var context(default, null):OpenGLRenderContext;
 	#elseif lime_opengles
 	public static var context(default, null):OpenGLES3RenderContext;
-	#elseif lime_webgl
+	#elseif (lime_webgl || (wasmjs))
 	public static var context(default, null):WebGL2RenderContext;
 	#else
 	public static var context(default, null):Dynamic;
@@ -1272,7 +1272,11 @@ class GL
 
 	public static inline function getExtension(name:String):Dynamic
 	{
+		#if (wasmjs)
+		return null;
+		#else
 		return context.getExtension(name);
+		#end
 	}
 
 	#if (lime_opengl || lime_opengles)
@@ -1386,9 +1390,14 @@ class GL
 		return context.getInternalformatParameter(target, internalformat, pname);
 	}
 
-	public static inline function getParameter(pname:Int):Dynamic
+	public static inline function getParameter(pname:Int):#if (wasmjs) wjs.html.webgl.GLParam #else Dynamic #end
 	{
+		#if (wasmjs)
+		if (context == null) return wjs.Callbacks.jsNum(8192);
+		return wjs.Callbacks.glGetParameter(cast context, pname);
+		#else
 		return context.getParameter(pname);
+		#end
 	}
 
 	#if (lime_opengl || lime_opengles)
@@ -1417,7 +1426,7 @@ class GL
 		return context.getProgramInfoLog(program);
 	}
 
-	public static inline function getProgramParameter(program:GLProgram, pname:Int):Dynamic
+	public static inline function getProgramParameter(program:GLProgram, pname:Int):#if (wasmjs) wjs.html.webgl.GLParam #else Dynamic #end
 	{
 		return context.getProgramParameter(program, pname);
 	}
@@ -1531,7 +1540,7 @@ class GL
 		return context.getShaderInfoLog(shader);
 	}
 
-	public static inline function getShaderParameter(shader:GLShader, pname:Int):Dynamic
+	public static inline function getShaderParameter(shader:GLShader, pname:Int):#if (wasmjs) wjs.html.webgl.GLParam #else Dynamic #end
 	{
 		return context.getShaderParameter(shader, pname);
 	}

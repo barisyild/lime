@@ -184,6 +184,16 @@ class AudioBuffer
 		audioBuffer.src = new Howl({src: ["data:" + __getCodec(bytes) + ";base64," + Base64.encode(bytes)], html5: true, preload: false});
 
 		return audioBuffer;
+		#elseif jvm
+		var info = new java.NativeArray<Int>(3);
+		var pcm = lime.jni.Lime.lime_jvm_audio_decode(bytes.getData(), info);
+		if (pcm == null) return null;
+		var audioBuffer = new AudioBuffer();
+		audioBuffer.data = new UInt8Array(Bytes.ofData(pcm));
+		audioBuffer.sampleRate = info[0];
+		audioBuffer.channels = info[1];
+		audioBuffer.bitsPerSample = info[2];
+		return audioBuffer;
 		#elseif (lime_cffi && !macro)
 		#if !cs
 		var audioBuffer = new AudioBuffer();
@@ -270,6 +280,9 @@ class AudioBuffer
 		var audioBuffer = new AudioBuffer();
 		audioBuffer.__srcSound = new Sound(new URLRequest(path));
 		return audioBuffer;
+		#elseif jvm
+		if (!sys.FileSystem.exists(path)) return null;
+		return fromBytes(sys.io.File.getBytes(path));
 		#elseif (lime_cffi && !macro)
 		#if !cs
 		var audioBuffer = new AudioBuffer();

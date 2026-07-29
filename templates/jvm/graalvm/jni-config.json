@@ -1,0 +1,81 @@
+[
+	{
+		"name": "lime.jni.Lime",
+		"allDeclaredMethods": true,
+		"allDeclaredFields": true,
+		"allDeclaredConstructors": true
+	},
+	{
+		"name": "lime.jni.CFFIPointer",
+		"fields": [{ "name": "ptr" }],
+		"methods": [{ "name": "<init>", "parameterTypes": ["long", "int"] }]
+	},
+	{
+		"name": "lime.jni.CairoMatrix",
+		"unsafeAllocated": true,
+		"fields": [
+			{ "name": "a" }, { "name": "b" }, { "name": "c" },
+			{ "name": "d" }, { "name": "tx" }, { "name": "ty" }
+		]
+	},
+	{
+		"name": "lime.graphics.cairo.CairoGlyph",
+		"fields": [{ "name": "index" }, { "name": "x" }, { "name": "y" }]
+	},
+	{
+		"name": "lime.math.CairoMatrix3",
+		"fields": [
+			{ "name": "a" }, { "name": "b" }, { "name": "c" },
+			{ "name": "d" }, { "name": "tx" }, { "name": "ty" }
+		]
+	},
+	{
+		"name": "lime.jni.GLActiveInfo",
+		"fields": [{ "name": "name" }, { "name": "size" }, { "name": "type" }],
+		"methods": [{ "name": "<init>", "parameterTypes": [] }]
+	},
+	{
+		"name": "lime.math.Vector2",
+		"unsafeAllocated": true,
+		"fields": [{ "name": "x" }, { "name": "y" }]
+	},
+	{
+		"name": "lime.math.Rectangle",
+		"fields": [
+			{ "name": "x" }, { "name": "y" },
+			{ "name": "width" }, { "name": "height" }
+		]
+	},
+	{
+		"name": "haxe.root.Array",
+		"fields": [{ "name": "length" }, { "name": "__a" }]
+	},
+	{
+		"name": "java.lang.Number",
+		"methods": [{ "name": "doubleValue", "parameterTypes": [] }]
+	},
+
+	{ "name": "lime._internal.backend.native.ApplicationEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.ClipboardEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.DropEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.GamepadEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.JoystickEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.KeyEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.MouseEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.RenderEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.TextEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.TouchEventInfo", "allDeclaredFields": true },
+	{ "name": "lime._internal.backend.native.WindowEventInfo", "allDeclaredFields": true },
+
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleApplicationEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleClipboardEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleDropEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleGamepadEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleJoystickEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleKeyEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleMouseEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleRenderEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleTextEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleTouchEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] },
+	{ "name": "lime._internal.backend.native.NativeApplication$NativeApplication_handleWindowEvent", "methods": [{ "name": "invoke", "parameterTypes": [] }] }
+]

@@ -1465,6 +1465,14 @@ class ProjectXMLParser extends HXProject
 
 					haxeflags.push(substitute(flag));
 
+				case "reflection":
+					var entry:Dynamic = {};
+					if (element.has.pattern) entry.pattern = substitute(element.att.pattern);
+					if (element.has.resolve("extends")) entry.extend = substitute(element.att.resolve("extends"));
+					if (element.has.meta) entry.meta = substitute(element.att.meta);
+					entry.mode = element.has.mode ? substitute(element.att.mode) : "reflect";
+					reflectionEntries.push(entry);
+
 				case "window":
 					parseWindowElement(element);
 

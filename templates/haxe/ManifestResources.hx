@@ -104,7 +104,7 @@ import sys.FileSystem;
 ::foreach assets::::if (embed != false)::::if (type == "image")::@:keep @:bind @:noCompletion #if display private #end class __ASSET__::flatName:: extends flash.display.BitmapData { public function new () { super (0, 0, true, 0); } }::else::@:keep @:bind @:noCompletion #if display private #end class __ASSET__::flatName:: extends ::flashClass:: { }::end::
 ::end::::end::
 
-#elseif (desktop || cpp)
+#elseif (desktop || cpp || wasmjs)
 
 ::if (assets != null)::::foreach assets::::if (embed)::@:keep ::if (type == "image")::@:image("::sourcePath::") @:noCompletion #if display private #end class __ASSET__::flatName:: extends lime.graphics.Image {}
 ::elseif (type == "sound")::@:file("::sourcePath::") @:noCompletion #if display private #end class __ASSET__::flatName:: extends haxe.io.Bytes {}

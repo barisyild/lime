@@ -904,6 +904,8 @@ class Application extends Module
 @:noCompletion private typedef ApplicationBackend = lime._internal.backend.flash.FlashApplication;
 #elseif (js && html5)
 @:noCompletion private typedef ApplicationBackend = lime._internal.backend.html5.HTML5Application;
+#elseif (jvm && wasmjs)
+@:noCompletion private typedef ApplicationBackend = lime._internal.backend.html5.HTML5Application;
 #else
 @:noCompletion private typedef ApplicationBackend = lime._internal.backend.native.NativeApplication;
 #end

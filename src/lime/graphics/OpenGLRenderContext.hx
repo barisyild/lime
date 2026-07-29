@@ -1,7 +1,7 @@
 package lime.graphics;
 
 #if (!lime_doc_gen || lime_opengl)
-#if (lime_doc_gen || (sys && lime_cffi && !doc_gen))
+#if (lime_doc_gen || (sys && lime_cffi && !doc_gen && !(wasmjs)))
 import lime._internal.backend.native.NativeOpenGLRenderContext;
 
 /**

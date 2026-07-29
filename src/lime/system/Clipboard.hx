@@ -46,7 +46,7 @@ class Clipboard
 		{
 			_text = FlashClipboard.generalClipboard.getData(TEXT_FORMAT);
 		}
-		#elseif (js || html5)
+		#elseif (js || html5 || wasmjs)
 		_text = cacheText;
 		#end
 		__updated = true;
@@ -63,7 +63,7 @@ class Clipboard
 		// On some native platforms, __update() is called automatically when the
 		// native clipboard changes. On others, __update() needs to be called
 		// manually.
-		#if (flash || js || html5 || ios || tvos || android)
+		#if (flash || js || html5 || ios || tvos || android || wasmjs)
 		__update();
 		#elseif linux
 		// Xorg won't call __update until we call set_text at least once.
@@ -99,7 +99,7 @@ class Clipboard
 		NativeCFFI.lime_clipboard_set_text(value);
 		#elseif flash
 		FlashClipboard.generalClipboard.setData(TEXT_FORMAT, value);
-		#elseif (js && html5)
+		#elseif ((js && html5) || wasmjs)
 		var window = Application.current.window;
 		if (window != null)
 		{
