@@ -186,7 +186,11 @@ class ImageBuffer
 		}
 		else if (__srcCanvas != null)
 		{
-			buffer.__srcCanvas = __srcCanvas;
+			buffer.__srcCanvas = cast wjs.Callbacks.createCanvas();
+			buffer.__srcCanvas.width = width;
+			buffer.__srcCanvas.height = height;
+			buffer.__srcContext = cast wjs.Callbacks.getContext2D(cast buffer.__srcCanvas);
+			buffer.__srcContext.drawImage(cast __srcCanvas, 0, 0);
 		}
 		#end
 		#end
@@ -203,6 +207,9 @@ class ImageBuffer
 	{
 		#if (js && html5)
 		if (__srcImage != null) return __srcImage;
+		return __srcCanvas;
+		#elseif wasmjs
+		if (!wjs.Callbacks.jsIsNull(cast __srcImage)) return __srcImage;
 		return __srcCanvas;
 		#elseif flash
 		return __srcBitmapData;

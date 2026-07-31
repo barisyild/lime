@@ -18,6 +18,11 @@ class JVMHTTPRequest
 	private static var resultQueue:Deque<HTTPResult> = new Deque();
 	private static var pumping:Bool = false;
 	private static var cookiesInitialized:Bool = false;
+	#if wasmjs
+	private static inline var requestLimit:Int = 17;
+	private static var activeRequests:Int = 0;
+	private static var requestQueue:Deque<HTTPRequestState> = new Deque();
+	#end
 
 	private var parent:_IHTTPRequest;
 	private var connection:JavaHttpURLConnection;
@@ -109,7 +114,12 @@ class JVMHTTPRequest
 		};
 
 		ensurePump();
+		#if wasmjs
+		requestQueue.add(state);
+		__startRequests();
+		#else
 		Thread.create(function() __run(state));
+		#end
 
 		return promise.future;
 	}
@@ -238,12 +248,36 @@ class JVMHTTPRequest
 		}
 	}
 
+	#if wasmjs
+	private static function __startRequests():Void
+	{
+		while (activeRequests < requestLimit)
+		{
+			var state = requestQueue.pop(false);
+			if (state == null) return;
+			if (state.instance.canceled) continue;
+
+			activeRequests++;
+			__startRequest(state);
+		}
+	}
+
+	private static function __startRequest(state:HTTPRequestState):Void
+	{
+		Thread.create(function() state.instance.__run(state));
+	}
+	#end
+
 	private static function __pump(deltaTime:Int):Void
 	{
 		var result = resultQueue.pop(false);
 		while (result != null)
 		{
 			__deliver(result);
+			#if wasmjs
+			activeRequests--;
+			__startRequests();
+			#end
 			result = resultQueue.pop(false);
 		}
 	}

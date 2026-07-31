@@ -100,7 +100,12 @@ public class Callbacks {
     public static native org.teavm.jso.typedarrays.Int8Array bitmapToRGBAPremul(JSObject bitmap, int w, int h);
 
     @JSBody(params = { "canvas", "w", "h" }, script =
-        "var x = canvas.getContext('2d', { willReadFrequently: true });"
+        "var rc = window.__limeReadCanvas || (window.__limeReadCanvas = document.createElement('canvas'));"
+        + "if (rc.width < w) rc.width = w;"
+        + "if (rc.height < h) rc.height = h;"
+        + "var x = rc.__limeCtx || (rc.__limeCtx = rc.getContext('2d', { willReadFrequently: true }));"
+        + "x.clearRect(0, 0, w, h);"
+        + "x.drawImage(canvas, 0, 0);"
         + "var d = x.getImageData(0, 0, w, h).data;"
         + "var n = w * h, i, a;"
         + "for (i = 0; i < n; i++) {"
@@ -115,17 +120,29 @@ public class Callbacks {
     public static native org.teavm.jso.typedarrays.Int8Array canvasToRGBAPremul(JSObject canvas, int w, int h);
 
     @JSBody(params = { "bitmap", "w", "h" }, script =
-        "var c = document.createElement('canvas'); c.width = w; c.height = h;"
-        + "var x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(bitmap, 0, 0);"
-        + "var d = x.getImageData(0, 0, w, h).data;"
-        + "var n = w * h, nb = (n + 7) >> 3, pc = n >> 3, bytes = new Uint8Array(nb), g, i, b, v;"
-        + "for (g = 0; g < pc; g++) {"
-        + "  b = g << 3; v = 0;"
-        + "  for (i = 0; i < 8; i++) { if (d[((b + i) << 2) + 3] !== 0) v |= 1 << (7 - i); }"
-        + "  bytes[g] = v;"
+        "var g = window.__limeMaskGL;"
+        + "if (!g) { var mc = document.createElement('canvas'); mc.width = 1; mc.height = 1; g = window.__limeMaskGL = mc.getContext('webgl', { alpha: true, depth: false, stencil: false, antialias: false, preserveDrawingBuffer: false }); if (g) { g.__tex = g.createTexture(); g.__fbo = g.createFramebuffer(); } }"
+        + "var n = w * h, nb = (n + 7) >> 3, bytes = new Uint8Array(nb), p = 0;"
+        + "if (g) {"
+        + "  g.bindTexture(g.TEXTURE_2D, g.__tex);"
+        + "  g.pixelStorei(g.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);"
+        + "  g.pixelStorei(g.UNPACK_FLIP_Y_WEBGL, 0);"
+        + "  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, g.RGBA, g.UNSIGNED_BYTE, bitmap);"
+        + "  g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MIN_FILTER, g.NEAREST);"
+        + "  g.texParameteri(g.TEXTURE_2D, g.TEXTURE_MAG_FILTER, g.NEAREST);"
+        + "  g.bindFramebuffer(g.FRAMEBUFFER, g.__fbo);"
+        + "  g.framebufferTexture2D(g.FRAMEBUFFER, g.COLOR_ATTACHMENT0, g.TEXTURE_2D, g.__tex, 0);"
+        + "  var d = new Uint8Array(n * 4);"
+        + "  g.readPixels(0, 0, w, h, g.RGBA, g.UNSIGNED_BYTE, d);"
+        + "  g.bindFramebuffer(g.FRAMEBUFFER, null);"
+        + "  g.texImage2D(g.TEXTURE_2D, 0, g.RGBA, 1, 1, 0, g.RGBA, g.UNSIGNED_BYTE, null);"
+        + "  for (var i = 3; i < d.length; i += 4, p++) {"
+        + "    if (d[i] !== 0) bytes[p >> 3] |= 1 << (7 - (p & 7));"
+        + "  }"
+        + "  d = null;"
         + "}"
         + "var half = (nb + 1) >> 1, buf = new Uint16Array(half);"
-        + "for (i = 0; i < half; i++) { buf[i] = (bytes[i * 2] << 8) | (i * 2 + 1 < nb ? bytes[i * 2 + 1] : 0); }"
+        + "for (var i = 0; i < half; i++) { buf[i] = (bytes[i * 2] << 8) | (i * 2 + 1 < nb ? bytes[i * 2 + 1] : 0); }"
         + "var parts = [], CH = 32768;"
         + "for (i = 0; i < half; i += CH) { parts.push(String.fromCharCode.apply(null, buf.subarray(i, Math.min(i + CH, half)))); }"
         + "return parts.join('');")
@@ -355,6 +372,8 @@ public class Callbacks {
     @JSBody(params = { "i8", "off", "n" }, script = "return new Uint8Array(i8.buffer, i8.byteOffset + off, n);")
     public static native JSObject viewUint8(JSObject i8, int off, int n);
 
+    @JSBody(params = { "f32", "off", "n" }, script = "return new Float32Array(f32.buffer, f32.byteOffset + off * 4, n);")
+    public static native JSObject viewFloat32(JSObject f32, int off, int n);
 
 
     @JSBody(params = {}, script = "return performance.now() | 0;")

@@ -92,6 +92,7 @@ extern class Callbacks {
 	static function limeCanvasLogicalWidth():Int;
 	static function limeCanvasLogicalHeight():Int;
 	static function viewUint8(i8:tjs._jso.JSObject, off:Int, n:Int):tjs._jso.JSObject;
+	static function viewFloat32(f32:tjs._jso.JSObject, off:Int, n:Int):tjs._jso.JSObject;
 	static function getTimer():Int;
 	static function installLocalTimezone():Void;
 	static function requestFullscreenElement():Void;

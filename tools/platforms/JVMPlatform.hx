@@ -458,14 +458,16 @@ class JVMPlatform
 
 		var teavmOpt = project.defines.exists("teavm-opt") ? project.defines.get("teavm-opt")
 			: project.defines.exists("teavm_opt") ? project.defines.get("teavm_opt") : null;
-		if (teavmOpt != null && teavmOpt != "")
+		var selectedTeaVMOpt = teavmOpt != null && teavmOpt != "" ? teavmOpt.toUpperCase() : "SIMPLE";
+		var pomPath = teavmDir + "/pom.xml";
+		var pom = sys.io.File.getContent(pomPath);
+		for (opt in ["SIMPLE", "ADVANCED", "FULL"])
 		{
-			var pomPath = teavmDir + "/pom.xml";
-			var pom = sys.io.File.getContent(pomPath);
-			pom = StringTools.replace(pom, "<teavm.opt>SIMPLE</teavm.opt>", "<teavm.opt>" + teavmOpt.toUpperCase() + "</teavm.opt>");
-			sys.io.File.saveContent(pomPath, pom);
-			Log.info("-teavm: optimizationLevel = " + teavmOpt.toUpperCase());
+			pom = StringTools.replace(pom, "<teavm.opt>" + opt + "</teavm.opt>",
+				"<teavm.opt>" + selectedTeaVMOpt + "</teavm.opt>");
 		}
+		sys.io.File.saveContent(pomPath, pom);
+		Log.info("-teavm: optimizationLevel = " + selectedTeaVMOpt);
 
 		stripShadowedClasses(teavmDir, fixed);
 
@@ -651,7 +653,8 @@ class JVMPlatform
 		var ctx = {
 			APP_TITLE: title,
 			APP_FILE: project.app.file,
-			BUILD_TS: Std.string(Std.int(Date.now().getTime() / 1000))
+			BUILD_TS: Std.string(Std.int(Date.now().getTime() / 1000)),
+			NO_TRACES: project.haxedefs.exists("no-traces") || project.haxeflags.indexOf("-D no-traces") > -1
 		};
 		var html = new haxe.Template(sys.io.File.getContent(tplPath)).execute(ctx);
 		Log.info("-teavm: index.html rendered from template " + tplPath);

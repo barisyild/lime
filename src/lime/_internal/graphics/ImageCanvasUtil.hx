@@ -94,11 +94,19 @@ class ImageCanvasUtil
 			buffer.__srcCanvas.height = buffer.height;
 			buffer.__srcContext = cast wjs.Callbacks.getContext2D(cast buffer.__srcCanvas);
 			wjs.Callbacks.putImageBytes(cast buffer.__srcContext, wjs._jso.Int8Array.copyFromJavaArray(@:privateAccess buffer.data.buffer.getData()), buffer.width, buffer.height, buffer.premultiplied);
+			image.dirty = false;
 		}
 		else if (image.type == DATA && buffer.__srcContext != null && buffer.data != null && image.dirty)
 		{
 			wjs.Callbacks.putImageBytes(cast buffer.__srcContext, wjs._jso.Int8Array.copyFromJavaArray(@:privateAccess buffer.data.buffer.getData()), buffer.width, buffer.height, buffer.premultiplied);
 			image.dirty = false;
+		}
+		else if (buffer.__srcCanvas == null)
+		{
+			buffer.__srcCanvas = cast wjs.Callbacks.createCanvas();
+			buffer.__srcCanvas.width = buffer.width;
+			buffer.__srcCanvas.height = buffer.height;
+			buffer.__srcContext = cast wjs.Callbacks.getContext2D(cast buffer.__srcCanvas);
 		}
 		if (clear) buffer.data = null;
 		#end
@@ -155,7 +163,12 @@ class ImageCanvasUtil
 				buffer.data = lime.utils.UInt8Array.fromBytes(bytes);
 				buffer.premultiplied = true;
 				image.dirty = false;
+				buffer.__srcImage = null;
 			}
+		}
+		if (buffer.data == null && buffer.width > 0 && buffer.height > 0)
+		{
+			buffer.data = new UInt8Array(buffer.width * buffer.height * 4);
 		}
 		#end
 
@@ -174,13 +187,6 @@ class ImageCanvasUtil
 	public static function copyPixels(image:Image, sourceImage:Image, sourceRect:Rectangle, destPoint:Vector2, alphaImage:Image = null,
 			alphaPoint:Vector2 = null, mergeAlpha:Bool = false):Void
 	{
-		#if (wasmjs)
-		convertToData(image);
-		convertToData(sourceImage);
-		if (alphaImage != null) convertToData(alphaImage);
-		ImageDataUtil.copyPixels(image, sourceImage, sourceRect, destPoint, alphaImage, alphaPoint, mergeAlpha);
-		return;
-		#end
 		if (destPoint == null || destPoint.x >= image.width || destPoint.y >= image.height || sourceRect == null || sourceRect.width < 1
 			|| sourceRect.height < 1)
 		{
@@ -220,6 +226,7 @@ class ImageCanvasUtil
 		{
 			// Set default composition (just in case it is different)
 			image.buffer.__srcContext.globalCompositeOperation = "source-over";
+			image.buffer.__srcContext.globalAlpha = 1;
 
 			image.buffer.__srcContext.drawImage(sourceImage.buffer.src, Std.int(sourceRect.x + sourceImage.offsetX),
 				Std.int(sourceRect.y + sourceImage.offsetY), Std.int(sourceRect.width), Std.int(sourceRect.height), Std.int(destPoint.x + image.offsetX),
@@ -275,11 +282,6 @@ class ImageCanvasUtil
 
 	public static function fillRect(image:Image, rect:Rectangle, color:Int, format:PixelFormat):Void
 	{
-		#if (wasmjs)
-		convertToData(image);
-		ImageDataUtil.fillRect(image, rect, color, format);
-		return;
-		#end
 		convertToCanvas(image);
 
 		var r:Int;
@@ -307,9 +309,14 @@ class ImageCanvasUtil
 			if (image.transparent && a == 0)
 			{
 				image.buffer.__srcCanvas.width = image.buffer.width;
+				image.dirty = true;
+				image.version++;
 				return;
 			}
 		}
+
+		image.buffer.__srcContext.globalCompositeOperation = "source-over";
+		image.buffer.__srcContext.globalAlpha = 1;
 
 		if (a < 255)
 		{

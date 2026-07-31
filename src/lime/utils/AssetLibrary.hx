@@ -781,8 +781,10 @@ class AssetLibrary
 					switch (type)
 					{
 						#if !web
+						#if !wasmjs
 						case IMAGE:
 							cachedImages.set(id, Image.fromBytes(data));
+						#end
 						case MUSIC, SOUND:
 							cachedAudioBuffers.set(id, AudioBuffer.fromBytes(data));
 						case FONT:

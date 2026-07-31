@@ -87,6 +87,12 @@ import sys.io.File;
 #end
 class Image
 {
+	#if wasmjs
+	private static inline var __imageDecodeLimit:Int = 4;
+	private static var __activeImageDecodes:Int = 0;
+	private static var __imageDecodeQueue:Array<WasmImageDecodeRequest> = [];
+	#end
+
 	/**
 		The `ImageBuffer` store that backs the `Image`
 	**/
@@ -754,6 +760,9 @@ class Image
 				return ImageDataUtil.getColorBoundsRect(this, mask, color, findColor, format);
 
 			case DATA:
+				#if ((js && html5) || (wasmjs))
+				ImageCanvasUtil.convertToData(this);
+				#end
 				return ImageDataUtil.getColorBoundsRect(this, mask, color, findColor, format);
 
 			case FLASH:
@@ -1010,28 +1019,70 @@ class Image
 		else return Future.withValue(null);
 
 		var promise = new lime.app.Promise<Image>();
-		var image = wjs.Callbacks.createImage();
-		var url = wjs.Callbacks.blobUrl(cast wjs._jso.Int8Array.copyFromJavaArray(bytes.getData()), type);
-		wjs.Callbacks.addEventListener(cast image, "load", new wjs.Callbacks.EventCbWrap(function(event)
-		{
-			wjs.Callbacks.revokeObjectURL(url);
-			var w = image.getWidth();
-			var h = image.getHeight();
-			var buffer = new ImageBuffer(null, w, h);
-			buffer.__srcImage = image;
-			promise.complete(new Image(buffer, 0, 0, w, h, null, CANVAS));
-		}));
-		wjs.Callbacks.addEventListener(cast image, "error", new wjs.Callbacks.EventCbWrap(function(event)
-		{
-			wjs.Callbacks.revokeObjectURL(url);
-			promise.error("Error loading image");
-		}));
-		image.setSrc(url);
+		__imageDecodeQueue.push({bytes: bytes, type: type, promise: promise});
+		__startImageDecodes();
 		return promise.future;
-				#else
+		#else
 		return new Future(fromBytes.bind(bytes), true);
 		#end
 	}
+
+	#if wasmjs
+	@:noCompletion private static function __startImageDecodes():Void
+	{
+		while (__activeImageDecodes < __imageDecodeLimit && __imageDecodeQueue.length > 0)
+		{
+			var request = __imageDecodeQueue.shift();
+			__activeImageDecodes++;
+			__startImageDecode(request);
+		}
+	}
+
+	@:noCompletion private static function __startImageDecode(request:WasmImageDecodeRequest):Void
+	{
+		var url:String = null;
+		var finished = false;
+		var decodePromise = request.promise;
+
+		var release = function():Bool
+		{
+			if (finished) return false;
+			finished = true;
+			if (url != null) wjs.Callbacks.revokeObjectURL(url);
+			__activeImageDecodes--;
+			__startImageDecodes();
+			return true;
+		};
+
+		try
+		{
+			var image = wjs.Callbacks.createImage();
+			url = wjs.Callbacks.blobUrl(cast wjs._jso.Int8Array.copyFromJavaArray(request.bytes.getData()), request.type);
+			request.bytes = null;
+			request = null;
+
+			wjs.Callbacks.addEventListener(cast image, "load", new wjs.Callbacks.EventCbWrap(function(event)
+			{
+				if (!release()) return;
+				var width = image.getWidth();
+				var height = image.getHeight();
+				var buffer = new ImageBuffer(null, width, height);
+				buffer.__srcImage = image;
+				decodePromise.complete(new Image(buffer, 0, 0, width, height, null, CANVAS));
+			}));
+			wjs.Callbacks.addEventListener(cast image, "error", new wjs.Callbacks.EventCbWrap(function(event)
+			{
+				if (!release()) return;
+				decodePromise.error("Error loading image");
+			}));
+			image.setSrc(url);
+		}
+		catch (error:Dynamic)
+		{
+			if (release()) decodePromise.error(Std.string(error));
+		}
+	}
+	#end
 
 	/**
 		Creates a new `Image` instance from a file path or URL, loaded asynchronously
@@ -1067,6 +1118,22 @@ class Image
 		loader.load(new URLRequest(path), new LoaderContext(true));
 
 		return promise.future;
+		#elseif wasmjs
+		var request = new HTTPRequest<Bytes>();
+		return request.load(path).then(function(bytes)
+		{
+			return loadFromBytes(bytes).then(function(image)
+			{
+				if (image != null)
+				{
+					return Future.withValue(image);
+				}
+				else
+				{
+					return cast Future.withError("");
+				}
+			});
+		});
 		#else
 		var request = new HTTPRequest<Image>();
 		return request.load(path).then(function(image)
@@ -1136,6 +1203,9 @@ class Image
 				ImageCanvasUtil.resize(this, newWidth, newHeight);
 
 			case DATA:
+				#if ((js && html5) || (wasmjs))
+				ImageCanvasUtil.convertToData(this);
+				#end
 				ImageDataUtil.resize(this, newWidth, newHeight);
 
 			case FLASH:
@@ -1814,6 +1884,9 @@ class Image
 			switch (type)
 			{
 				case DATA:
+					#if ((js && html5) || (wasmjs))
+					ImageCanvasUtil.convertToData(this);
+					#end
 					ImageDataUtil.setFormat(this, value);
 
 				default:
@@ -1861,6 +1934,9 @@ class Image
 					ImageDataUtil.resizeBuffer(this, newWidth, newHeight);
 
 				case DATA:
+					#if ((js && html5) || (wasmjs))
+					ImageCanvasUtil.convertToData(this);
+					#end
 					ImageDataUtil.resizeBuffer(this, newWidth, newHeight);
 
 				case FLASH:
@@ -1956,3 +2032,12 @@ class Image
 		return buffer.transparent = value;
 	}
 }
+
+#if wasmjs
+private typedef WasmImageDecodeRequest =
+{
+	var bytes:Bytes;
+	var type:String;
+	var promise:Promise<Image>;
+}
+#end

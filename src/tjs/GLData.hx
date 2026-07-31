@@ -2,21 +2,107 @@ package tjs;
 
 #if (wasmjs)
 class GLData {
-	public static inline function floats(data:lime.utils.Float32Array):tjs._jso.Float32Array {
+	static inline var MIN_SCRATCH_BYTES = 64 * 1024;
+	static inline var MAX_SCRATCH_BYTES = 4 * 1024 * 1024;
+	static inline var MAX_CACHED_VIEWS = 256;
+
+	static var uploadScratch:tjs._jso.JByteBuffer = null;
+	static var uploadScratchCapacity:Int = 0;
+	static var byteScratchView:tjs._jso.Uint8Array = null;
+	static var floatScratchView:tjs._jso.Float32Array = null;
+	static var byteScratchSubs:haxe.ds.IntMap<tjs._jso.Uint8Array> = null;
+	static var floatScratchSubs:haxe.ds.IntMap<tjs._jso.Float32Array> = null;
+	static var byteScratchSubCount:Int = 0;
+	static var floatScratchSubCount:Int = 0;
+
+	public static function floats(data:lime.utils.Float32Array):tjs._jso.Float32Array {
 		if (data == null) return null;
 		var n = data.length;
-		var out = tjs._jso.Float32Array.create(n);
-		for (i in 0...n) out.set(i, data[i]);
-		return out;
+		var byteLength = data.byteLength;
+		var src:haxe.io.Bytes = cast data.buffer;
+
+		if (byteLength > MAX_SCRATCH_BYTES) {
+			var out = tjs._jso.Float32Array.create(n);
+			for (i in 0...n) out.set(i, data[i]);
+			return out;
+		}
+
+		copyToScratch(src, data.byteOffset, byteLength);
+
+		var sub = floatScratchSubs.get(n);
+		if (sub == null) {
+			if (floatScratchSubCount >= MAX_CACHED_VIEWS) {
+				floatScratchSubs = new haxe.ds.IntMap();
+				floatScratchSubCount = 0;
+			}
+			sub = cast tjs.Callbacks.viewFloat32(cast floatScratchView, 0, n);
+			floatScratchSubs.set(n, sub);
+			floatScratchSubCount++;
+		}
+		return sub;
 	}
 
-	public static inline function bytes(view:lime.utils.ArrayBufferView):tjs._jso.Uint8Array {
+	public static function bytes(view:lime.utils.ArrayBufferView):tjs._jso.Uint8Array {
 		if (view == null) return null;
 		var src:haxe.io.Bytes = cast view.buffer;
-		var off = view.byteOffset;
 		var n = view.byteLength;
-		var i8 = tjs._jso.Int8Array.copyFromJavaArray(src.getData());
-		return cast tjs.Callbacks.viewUint8(cast i8, off, n);
+
+		if (n > MAX_SCRATCH_BYTES) {
+			var i8 = tjs._jso.Int8Array.copyFromJavaArray(src.getData());
+			return cast tjs.Callbacks.viewUint8(cast i8, view.byteOffset, n);
+		}
+
+		copyToScratch(src, view.byteOffset, n);
+
+		var sub = byteScratchSubs.get(n);
+		if (sub == null) {
+			if (byteScratchSubCount >= MAX_CACHED_VIEWS) {
+				byteScratchSubs = new haxe.ds.IntMap();
+				byteScratchSubCount = 0;
+			}
+			sub = cast tjs.Callbacks.viewUint8(cast byteScratchView, 0, n);
+			byteScratchSubs.set(n, sub);
+			byteScratchSubCount++;
+		}
+		return sub;
+	}
+
+	private static inline function copyToScratch(src:haxe.io.Bytes, offset:Int, length:Int):Void {
+		ensureUploadScratch(length);
+		uploadScratch.clear();
+		uploadScratch.put(src.getData(), offset, length);
+	}
+
+	private static function ensureUploadScratch(required:Int):Void {
+		if (uploadScratch != null && required <= uploadScratchCapacity) {
+			if (tjs.Callbacks.getIntField(cast byteScratchView, "byteLength") == 0) {
+				refreshScratchViews();
+			}
+			return;
+		}
+
+		var capacity = uploadScratchCapacity > 0 ? uploadScratchCapacity : MIN_SCRATCH_BYTES;
+		while (capacity < required) {
+			var next = capacity << 1;
+			if (next <= capacity) {
+				capacity = required;
+				break;
+			}
+			capacity = next;
+		}
+
+		uploadScratch = tjs._jso.JByteBuffer.allocateDirect(capacity);
+		uploadScratchCapacity = capacity;
+		refreshScratchViews();
+	}
+
+	private static function refreshScratchViews():Void {
+		byteScratchView = tjs._jso.Uint8Array.fromJavaBuffer(uploadScratch);
+		floatScratchView = tjs._jso.Float32Array.fromJavaBuffer(uploadScratch);
+		byteScratchSubs = new haxe.ds.IntMap();
+		floatScratchSubs = new haxe.ds.IntMap();
+		byteScratchSubCount = 0;
+		floatScratchSubCount = 0;
 	}
 
 	public static inline function readBack(view:lime.utils.ArrayBufferView, src:tjs._jso.Uint8Array):Void {

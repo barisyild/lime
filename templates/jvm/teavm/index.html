@@ -14,6 +14,7 @@ canvas{display:block}</style>
 <script>globalThis.lime=globalThis.lime||{};if(!globalThis.lime.embed)globalThis.lime.embed=function(){globalThis.__limePendingEmbed=Array.prototype.slice.call(arguments);};</script>
 <script type="module">
 Error.stackTraceLimit=100;
+const TRACE_ENABLED=::if NO_TRACES::false::else::true::end::;
 (function(){ const wi=WebAssembly.instantiate; WebAssembly.instantiate=function(b,imp){ if(imp && !imp.lime) imp.lime=new Proxy({},{get:(t,p)=>typeof p==="string"?function(){throw new Error("limejvm removed: "+p);}:undefined}); return wi.apply(this,arguments); }; })();
 globalThis.__limePrint=(t)=>console.log("[em]",t);
 let teavmRef=null;
@@ -48,9 +49,10 @@ globalThis.lime.embed = function(projectName, elementId, width, height, config){
 async function __limeBoot(){
   const v=Date.now();
   const bytes=new Uint8Array(await (await fetch("classes.wasm?v="+v,{cache:"no-cache"})).arrayBuffer());
-  const teavm=await window.TeaVM.wasmGC.load(bytes,{
+  const teavmOptions=TRACE_ENABLED?{
     stackDeobfuscator:{enabled:true, path:"classes.wasm-deobfuscator.wasm?v="+v, externalInfoPath:"classes.wasm.teadbg?v="+v}
-  });
+  }:{};
+  const teavm=await window.TeaVM.wasmGC.load(bytes,teavmOptions);
   teavmRef=teavm;
   teavm.exports.main([]);
 }

@@ -4,6 +4,7 @@ package tjs._jso;
 @:native("org.teavm.jso.typedarrays.Float32Array")
 extern class Float32Array extends ArrayBufferView {
 	static function create(length:Int):Float32Array;
+	static function fromJavaBuffer(buffer:tjs._jso.JByteBuffer.JBuffer):Float32Array;
 	function get(index:Int):Single;
 	function set(index:Int, value:Single):Void;
 }

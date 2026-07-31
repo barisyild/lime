@@ -89,6 +89,7 @@ extern class Callbacks {
 	static function limeCanvasLogicalWidth():Int;
 	static function limeCanvasLogicalHeight():Int;
 	static function viewUint8(i8:wjs._jso.JSObject, off:Int, n:Int):wjs._jso.JSObject;
+	static function viewFloat32(f32:wjs._jso.JSObject, off:Int, n:Int):wjs._jso.JSObject;
 	static function getTimer():Int;
 	static function gamepadPoll():Int;
 	static function gamepadPresent(i:Int):Bool;
