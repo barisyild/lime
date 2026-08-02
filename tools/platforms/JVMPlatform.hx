@@ -543,7 +543,43 @@ class JVMPlatform
 		var appJsName = project.app.file + ".js";
 		if (FileSystem.exists(teavmDir + "/wasm-gc-runtime.js"))
 		{
-			sys.io.File.saveContent(teavmDir + "/" + appJsName, sys.io.File.getContent(teavmDir + "/wasm-gc-runtime.js"));
+			var runtimeJs = sys.io.File.getContent(teavmDir + "/wasm-gc-runtime.js");
+			var eagerStackHead = "      takeStackTrace(exceptionClassName) {\n"
+				+ "        const stack = new Error().stack ?? \"\";\n"
+				+ "        const addresses = [];\n"
+				+ "        for (const line of stack.split(\"\\n\")) {\n"
+				+ "          const match = exceptionFrameRegex.exec(line);\n"
+				+ "          if (match !== null && match.length >= 2) {\n"
+				+ "            addresses.push(parseInt(match[1], 16));\n"
+				+ "          }\n"
+				+ "        }\n"
+				+ "        return {\n"
+				+ "          getStack() {";
+			var lazyStackHead = "      takeStackTrace(exceptionClassName) {\n"
+				+ "        const lazyError = new Error();\n"
+				+ "        let addresses = null;\n"
+				+ "        return {\n"
+				+ "          getStack() {\n"
+				+ "            if (addresses === null) {\n"
+				+ "              addresses = [];\n"
+				+ "              const stack = lazyError.stack ?? \"\";\n"
+				+ "              for (const line of stack.split(\"\\n\")) {\n"
+				+ "                const match = exceptionFrameRegex.exec(line);\n"
+				+ "                if (match !== null && match.length >= 2) {\n"
+				+ "                  addresses.push(parseInt(match[1], 16));\n"
+				+ "                }\n"
+				+ "              }\n"
+				+ "            }";
+			if (runtimeJs.indexOf(eagerStackHead) >= 0)
+			{
+				runtimeJs = StringTools.replace(runtimeJs, eagerStackHead, lazyStackHead);
+				Log.info("-teavm: patched wasm-gc-runtime.js (lazy exception stack capture)");
+			}
+			else
+			{
+				Log.info("-teavm: WARNING lazy-stack patch anchor not found; exception stacks stay eager");
+			}
+			sys.io.File.saveContent(teavmDir + "/" + appJsName, runtimeJs);
 			FileSystem.deleteFile(teavmDir + "/wasm-gc-runtime.js");
 		}
 
