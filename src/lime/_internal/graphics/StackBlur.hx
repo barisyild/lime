@@ -31,7 +31,7 @@ class StackBlur
 	public static function blur(dest:Image, source:Image, sourceRect:Rectangle, destPoint:Vector2, blurX:Float, blurY:Float, quality:Int)
 	{
 		dest.copyPixels(source, sourceRect, destPoint);
-		__stackBlurCanvasRGBA(dest, Std.int(sourceRect.width), Std.int(sourceRect.height), blurX, blurY, quality);
+		__stackBlurCanvasRGBA(dest, Std.int(Math.min(sourceRect.width, dest.width)), Std.int(Math.min(sourceRect.height, dest.height)), blurX, blurY, quality);
 	}
 
 	private static function __stackBlurCanvasRGBA(image:Image, width:Int, height:Int, blurX:Float, blurY:Float, quality:Int)

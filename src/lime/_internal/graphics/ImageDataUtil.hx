@@ -1775,6 +1775,33 @@ private class ImageDataView
 		this.width = Math.floor(rect.width);
 		this.height = Math.floor(rect.height);
 		byteOffset = (stride * (this.y + image.offsetY)) + ((this.x + image.offsetX) * 4);
+
+		var data = image.buffer.data;
+		if (data != null && width > 0 && height > 0)
+		{
+			var dataLength = data.length;
+			if (byteOffset >= dataLength)
+			{
+				width = 0;
+				height = 0;
+			}
+			else
+			{
+				if (byteOffset + (width * 4) > dataLength)
+				{
+					width = Std.int((dataLength - byteOffset) / 4);
+				}
+				if (width > 0 && stride > 0)
+				{
+					var maxRows = Std.int((dataLength - byteOffset - (width * 4)) / stride) + 1;
+					if (height > maxRows) height = maxRows;
+				}
+				else
+				{
+					height = 0;
+				}
+			}
+		}
 	}
 }
 

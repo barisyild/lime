@@ -187,7 +187,11 @@ abstract RGBA(#if (flash && !lime_doc_gen) Int #else UInt #end) from Int to Int 
 		if (a != 0 && a != 0xFF)
 		{
 			unmult = 255.0 / a;
-			set(__clamp[Math.round(r * unmult)], __clamp[Math.round(g * unmult)], __clamp[Math.round(b * unmult)], a);
+			var max = __clamp.length - 1;
+			var ri = Math.round(r * unmult);
+			var gi = Math.round(g * unmult);
+			var bi = Math.round(b * unmult);
+			set(__clamp[ri > max ? max : ri], __clamp[gi > max ? max : gi], __clamp[bi > max ? max : bi], a);
 		}
 	}
 
