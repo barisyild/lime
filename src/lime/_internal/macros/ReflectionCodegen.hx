@@ -183,6 +183,19 @@ class ReflectionCodegen
 		return false;
 	}
 
+	static function isReflective(classType:ClassType, packPrefixes:Array<String>, extendsRoots:Array<String>,
+			metaNames:Array<String>):Bool
+	{
+		if (classType.isInterface || classType.isExtern) return false;
+		var asset = classType.pack.length == 0 && StringTools.startsWith(classType.name, "__ASSET__");
+		return hasSWFAccess(classType)
+			|| classType.meta.has(":bind")
+			|| asset
+			|| inReflectPackage(classType, packPrefixes)
+			|| extendsAnyRoot(classType, extendsRoots)
+			|| hasAnyMetaName(classType, metaNames);
+	}
+
 	public static function generate(outputPath:String, ?reflectPackages:String, ?reflectExtends:String, ?reflectMetas:String):Void
 	{
 		#if wasmjs
@@ -191,6 +204,27 @@ class ReflectionCodegen
 		var packPrefixes = splitCsv(reflectPackages);
 		var extendsRoots = splitCsv(reflectExtends);
 		var metaNames = splitCsv(reflectMetas);
+		var kept = 0;
+
+		Context.onAfterTyping(function(moduleTypes:Array<ModuleType>)
+		{
+			var added = 0;
+			for (moduleType in moduleTypes)
+			{
+				switch (moduleType)
+				{
+					case TClassDecl(ref):
+						var classType = ref.get();
+						if (classType.meta.has(":keep")) continue;
+						if (!isReflective(classType, packPrefixes, extendsRoots, metaNames)) continue;
+						classType.meta.add(":keep", [], classType.pos);
+						added++;
+					default:
+				}
+			}
+			kept += added;
+			if (added > 0) Sys.println("[lime-reflection] @:keep -> " + added + " classes (" + kept + " total, DCE protection)");
+		});
 
 		Context.onGenerate(function(types:Array<Type>)
 		{
@@ -203,16 +237,7 @@ class ReflectionCodegen
 				{
 					case TInst(ref, _):
 						var classType = ref.get();
-						if (classType.isInterface || classType.isExtern) continue;
-
-						var asset = classType.pack.length == 0 && StringTools.startsWith(classType.name, "__ASSET__");
-						var reflective = hasSWFAccess(classType)
-							|| classType.meta.has(":bind")
-							|| asset
-							|| inReflectPackage(classType, packPrefixes)
-							|| extendsAnyRoot(classType, extendsRoots)
-							|| hasAnyMetaName(classType, metaNames);
-						if (!reflective) continue;
+						if (!isReflective(classType, packPrefixes, extendsRoots, metaNames)) continue;
 
 						var name = jvmName(classType);
 						if (seen.exists(name)) continue;
@@ -232,7 +257,15 @@ class ReflectionCodegen
 
 	static function jvmName(classType:ClassType):String
 	{
-		return classType.pack.length > 0 ? classType.pack.join(".") + "." + classType.name : "haxe.root." + classType.name;
+		var pack = classType.pack.copy();
+		var moduleLast = classType.module.split(".").pop();
+		if (pack.length > 0 && pack[pack.length - 1] == "_" + moduleLast && moduleLast != classType.name)
+		{
+			pack.pop();
+			var base = pack.length > 0 ? pack.join(".") + "." + moduleLast : "haxe.root." + moduleLast;
+			return base + "$" + classType.name;
+		}
+		return pack.length > 0 ? pack.join(".") + "." + classType.name : "haxe.root." + classType.name;
 	}
 
 	static function inReflectPackage(classType:ClassType, patterns:Array<String>):Bool

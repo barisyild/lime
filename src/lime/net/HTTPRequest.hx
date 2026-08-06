@@ -17,7 +17,7 @@ class HTTPRequest<T>
 #if !macro
 @:genericBuild(lime._internal.macros.HTTPRequestMacro.build())
 #end
-class HTTPRequest<T> extends AbstractHTTPRequest<T> {}
+@:keep class HTTPRequest<T> extends AbstractHTTPRequest<T> {}
 
 #if !lime_debug
 @:fileXml('tags="haxe,release"')
