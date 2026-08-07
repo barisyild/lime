@@ -67,7 +67,7 @@ class ClipImpl implements Clip {
 
     void setGainDb(float dB) {
         gainDb = dB;
-        waGain(id, Math.pow(10.0, dB / 20.0));
+        waGain(id, dB <= FloatControl.MIN_DB ? 0.0 : Math.pow(10.0, dB / 20.0));
     }
 
     float getGainDb() {

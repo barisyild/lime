@@ -1,6 +1,8 @@
 package javax.sound.sampled;
 
 public class FloatControl {
+    static final float MIN_DB = -80.0f;
+
     private final ClipImpl clip;
 
     FloatControl(ClipImpl clip) {
@@ -16,7 +18,7 @@ public class FloatControl {
     }
 
     public float getMinimum() {
-        return -80.0f;
+        return MIN_DB;
     }
 
     public float getMaximum() {
