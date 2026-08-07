@@ -8,6 +8,7 @@ extern class Window {
 	function getDocument():HTMLDocument;
 	function getLocation():JSObject;
 	function getScreen():Screen;
+	function getFrameElement():JSObject;
 	function getInnerWidth():Int;
 	function getInnerHeight():Int;
 	function getDevicePixelRatio():Float;
