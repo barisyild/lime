@@ -56,6 +56,7 @@ extern class Callbacks {
 	static function locationHref():String;
 	static function navigateSelf(url:String):Void;
 	static function hasWindowField(name:String):Bool;
+	static function matchMediaMatches(query:String):Bool;
 	static function screenOrientationType():String;
 	static function clipboardEventHasText(event:tjs._jso.JSObject):Bool;
 	static function clipboardEventGetText(event:tjs._jso.JSObject):String;

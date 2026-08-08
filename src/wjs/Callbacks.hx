@@ -54,6 +54,7 @@ extern class Callbacks {
 	static function locationPort():String;
 	static function locationHref():String;
 	static function hasWindowField(name:String):Bool;
+	static function matchMediaMatches(query:String):Bool;
 	static function screenOrientationType():String;
 	static function clipboardEventHasText(event:wjs._jso.JSObject):Bool;
 	static function clipboardEventGetText(event:wjs._jso.JSObject):String;

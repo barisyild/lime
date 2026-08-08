@@ -190,6 +190,9 @@ public class Callbacks {
     @JSBody(params = { "name" }, script = "return (name in window);")
     public static native boolean hasWindowField(String name);
 
+    @JSBody(params = { "query" }, script = "return !!(window.matchMedia && window.matchMedia(query).matches);")
+    public static native boolean matchMediaMatches(String query);
+
     @JSBody(params = {}, script = "return (screen.orientation && screen.orientation.type) ? screen.orientation.type : null;")
     public static native String screenOrientationType();
 
