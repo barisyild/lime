@@ -220,6 +220,8 @@ class WindowsPlatform extends PlatformTarget
 		{
 			case "cpp": "windows";
 			case "hl": project.targetFlags.exists("hlc") ? "hlc" : targetType;
+			case "jvm" if (project.targetFlags.exists("teavm")): "teavm";
+			case "jvm" if (project.targetFlags.exists("graalvm")): "graalvm";
 			default: targetType;
 		}
 		targetDirectory = Path.combine(project.app.path, project.config.getString("windows.output-directory", defaultTargetDirectory));
@@ -234,6 +236,11 @@ class WindowsPlatform extends PlatformTarget
 			applicationDirectory = targetDirectory + "/bin/";
 			executablePath = applicationDirectory + project.app.file + ".exe";
 		}
+	}
+
+	private function jvmPlatformSubdir():String
+	{
+		return "Windows" + (is64 ? "64" : "");
 	}
 
 	public override function build():Void
@@ -490,30 +497,10 @@ class WindowsPlatform extends PlatformTarget
 			}
 			else if (targetType == "jvm")
 			{
-				var libPath = Path.combine(Haxelib.getPath(new Haxelib("lime")), "templates/java/lib/");
-
-				if (sys.FileSystem.exists(libPath + "lwjgl.jar"))
-					System.runCommand("", "haxe", [hxml, "-java-lib", libPath + "disruptor.jar", "-java-lib", libPath + "lwjgl.jar"]);
-				else
-					System.runCommand("", "haxe", [hxml]);
-
+				var jvm = new JVMPlatform(project, targetDirectory, jvmPlatformSubdir());
+				jvm.compile(hxml);
 				if (noOutput) return;
-
-				var haxeVersion = project.environment.get("haxe_ver");
-				var haxeVersionString = "3404";
-
-				if (haxeVersion.length > 4)
-				{
-					haxeVersionString = haxeVersion.charAt(0)
-						+ haxeVersion.charAt(2)
-						+ (haxeVersion.length == 5 ? "0" + haxeVersion.charAt(4) : haxeVersion.charAt(4) + haxeVersion.charAt(5));
-				}
-
-				System.runCommand(targetDirectory + "/obj", "haxelib", ["run", "hxjava", "hxjava_build.txt", "--haxe-version", haxeVersionString]);
-				System.recursiveCopy(targetDirectory + "/obj/lib", Path.combine(applicationDirectory, "lib"));
-				System.copyFile(targetDirectory + "/obj/ApplicationMain" + (project.debug ? "-Debug" : "") + ".jar",
-					Path.combine(applicationDirectory, project.app.file + ".jar"));
-				JavaHelper.copyLibraries(project.templatePaths, "Windows" + (is64 ? "64" : ""), applicationDirectory);
+				jvm.deploy();
 			}
 			else if (targetType == "winrt")
 			{
@@ -934,7 +921,7 @@ class WindowsPlatform extends PlatformTarget
 		}
 		else if (targetType == "jvm")
 		{
-			System.runCommand(applicationDirectory, "java", ["-jar", project.app.file + ".jar"].concat(arguments));
+			new JVMPlatform(project, targetDirectory, jvmPlatformSubdir()).run(arguments);
 		}
 		else if (targetType == "winrt")
 		{
