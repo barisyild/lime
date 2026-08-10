@@ -399,12 +399,7 @@ class HTML5Window
 
 			if (webgl == null)
 			{
-				#if (wasmjs)
-				canvas.getContext("2d");
-				context.canvas2D = null;
-				#else
 				context.canvas2D = cast canvas.getContext("2d");
-				#end
 				context.type = CANVAS;
 				context.version = "";
 				context.attributes.hardware = false;
