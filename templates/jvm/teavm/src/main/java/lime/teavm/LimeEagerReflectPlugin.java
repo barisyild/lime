@@ -26,15 +26,22 @@ public class LimeEagerReflectPlugin implements TeaVMPlugin {
                 org.teavm.dependency.MethodDependency getName = agent.linkMethod(new MethodReference(Class.class, "getName", String.class));
                 getName.getVariable(0).propagate(agent.getType(ValueType.object("java.lang.Class")));
                 int linked = 0;
-                for (String name : LimeReflectionSupplier.classes()) {
+                int dropped = 0;
+                for (String name : LimeReflectionPolicy.classes()) {
                     if (agent.getClassSource().get(name) != null) {
                         agent.linkClass(name);
                         getName.getVariable(0).getClassValueNode().propagate(agent.getType(ValueType.object(name)));
                         linked++;
+                    } else {
+                        dropped++;
                     }
                 }
                 getName.use();
                 System.err.println("[lime-teavm] LimeEagerReflectPlugin: eagerly linked " + linked + " reflect-list classes");
+                if (dropped > 0) {
+                    System.err.println("[lime-teavm] LimeEagerReflectPlugin: dropped " + dropped
+                        + " reflect-list names with no class on the TeaVM classpath");
+                }
             }
         });
     }

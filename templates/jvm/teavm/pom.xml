@@ -37,6 +37,18 @@
     </dependency>
     <dependency>
       <groupId>org.teavm</groupId>
+      <artifactId>teavm-extension-apis</artifactId>
+      <version>${teavm.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.teavm</groupId>
+      <artifactId>teavm-extension-spi</artifactId>
+      <version>${teavm.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.teavm</groupId>
       <artifactId>teavm-interop</artifactId>
       <version>${teavm.version}</version>
     </dependency>

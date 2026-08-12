@@ -783,6 +783,20 @@ class JVMPlatform
 
 	private function stageTeaVMTemplate(limeRoot:String, teavmDir:String):Void
 	{
+		for (stale in [
+			"/src/main/java/lime/teavm/LimeReflectionSupplier.java",
+			"/src/main/resources/META-INF/services/org.teavm.classlib.ReflectionSupplier",
+			"/target/classes/lime/teavm/LimeReflectionSupplier.class",
+			"/target/classes/META-INF/services/org.teavm.classlib.ReflectionSupplier"
+		])
+		{
+			if (FileSystem.exists(teavmDir + stale))
+			{
+				FileSystem.deleteFile(teavmDir + stale);
+				Log.info("-teavm: removed stale " + stale.substr(1) + " (replaced by ReflectionPolicy)");
+			}
+		}
+
 		var prefix = "jvm/teavm/";
 		var roots = [Path.combine(limeRoot, "templates")].concat(project.templatePaths);
 		for (root in roots)
