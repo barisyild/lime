@@ -6,7 +6,9 @@ extern class Window {
 	static function current():Window;
 	static function cancelAnimationFrame(handle:Int):Void;
 	function getDocument():HTMLDocument;
-	function getLocation():JSObject;
+	function getLocation():Location;
+	function getLocalStorage():Storage;
+	function getSessionStorage():Storage;
 	function getScreen():Screen;
 	function getFrameElement():HTMLElement;
 	function getInnerWidth():Int;
