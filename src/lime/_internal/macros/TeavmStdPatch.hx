@@ -436,6 +436,7 @@ class TeavmStdPatch
 		if (!hasImplementation(fields)) return null;
 		var removed = 0;
 		var exitPatched = false;
+		var sleepPatched = false;
 		for (f in fields)
 		{
 			switch (f.kind)
@@ -461,12 +462,15 @@ class TeavmStdPatch
 				case FFun(fn) if (f.name == "exit" && fn.expr != null):
 					fn.expr = macro {};
 					exitPatched = true;
+				case FFun(fn) if (f.name == "sleep" && fn.expr != null):
+					fn.expr = macro {};
+					sleepPatched = true;
 				case _:
 			}
 		}
-		if (removed != 2 || !exitPatched)
+		if (removed != 2 || !exitPatched || !sleepPatched)
 		{
-			Context.error("TeavmStdPatch.sysBuild: expected 2 redirect removals + exit (got " + removed + "/" + exitPatched + ") — std layout changed?", Context.currentPos());
+			Context.error("TeavmStdPatch.sysBuild: expected 2 redirect removals + exit + sleep (got " + removed + "/" + exitPatched + "/" + sleepPatched + ") — std layout changed?", Context.currentPos());
 		}
 		return fields;
 	}
@@ -633,6 +637,7 @@ class TeavmStdPatch
 		if (!owner) return null;
 		var messagesPatched = false;
 		var readMessagePatched = false;
+		var createPatched = false;
 		for (f in fields)
 		{
 			switch (f.kind)
@@ -643,12 +648,21 @@ class TeavmStdPatch
 				case FFun(fn) if (f.name == "readMessage" && fn.expr != null):
 					fn.expr = macro return messages.poll();
 					readMessagePatched = true;
+				case FFun(fn) if (f.name == "create" && fn.expr != null && fn.args.length == 2):
+					fn.expr = macro {
+						var hx = new HaxeThread();
+						if (withEventLoop)
+							hx.events = new EventLoop();
+						job();
+						return hx;
+					};
+					createPatched = true;
 				case _:
 			}
 		}
-		if (!messagesPatched || !readMessagePatched)
+		if (!messagesPatched || !readMessagePatched || !createPatched)
 		{
-			Context.error("TeavmStdPatch.threadBuild: messages/readMessage pair mismatch — std layout changed?", Context.currentPos());
+			Context.error("TeavmStdPatch.threadBuild: messages/readMessage/create mismatch — std layout changed?", Context.currentPos());
 		}
 		return fields;
 	}

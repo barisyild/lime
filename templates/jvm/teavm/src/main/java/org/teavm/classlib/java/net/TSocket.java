@@ -7,6 +7,9 @@ public class TSocket {
     public java.net.InetAddress getLocalAddress() { return null; }
     public int getLocalPort() { return 0; }
     public void setSoTimeout(int timeout) {}
+    public void setTcpNoDelay(boolean on) {}
+    public java.net.InetAddress getInetAddress() { return null; }
+    public int getPort() { return 0; }
     public void shutdownInput() {}
     public void shutdownOutput() {}
     public void close() {}

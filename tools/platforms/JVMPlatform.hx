@@ -451,7 +451,9 @@ class JVMPlatform
 		var resDir = targetDirectory + "/obj/teavm-res";
 		if (FileSystem.exists(resDir)) System.removeDirectory(resDir);
 		System.mkdir(resDir);
-		System.runCommand("", "unzip", ["-o", "-q", fixed, "-x", "*.class", "META-INF/*", "-d", resDir], true, true);
+		System.runCommand("", "unzip", ["-o", "-q", fixed, "-d", resDir], true, true);
+		if (FileSystem.exists(resDir + "/META-INF")) System.removeDirectory(resDir + "/META-INF");
+		pruneClassFiles(resDir);
 		generateTeaVMResourceData(resDir, teavmDir);
 
 		stageTeaVMTemplate(limeRoot, teavmDir);
@@ -494,7 +496,7 @@ class JVMPlatform
 			Log.info("-teavm: -Dteavm-nopatch -> autostub forced to a single derivation-free compile (maxIter=1)");
 		}
 		var autostubIters = nopatch ? "1" : "15";
-		System.runCommand("", "java", ["-jar", autostub, sys.FileSystem.absolutePath(teavmDir), fixed, classlibM2, reflectListPath(), "mvn", autostubIters]);
+		System.runCommand("", "java", ["-jar", autostub, sys.FileSystem.absolutePath(teavmDir), fixed, classlibM2, reflectListPath(), mavenCommand(), autostubIters]);
 
 		if (!FileSystem.exists(teavmDir + "/classes.wasm"))
 			Log.error("-teavm: auto-stub loop did not produce classes.wasm — see " + teavmDir + "/autostub-build.log for the unresolved TeaVM errors.");
@@ -889,9 +891,59 @@ class JVMPlatform
 		}
 		if (toDelete.length > 0)
 		{
-			System.runCommand("", "zip", ["-q", "-d", jar].concat(toDelete));
+			deleteArchiveEntries(jar, toDelete);
 			Log.info("-teavm: stripped " + toDelete.length + " genjvm class(es) shadowed by the maven module from " + Path.withoutDirectory(jar));
 		}
+	}
+
+	private function deleteArchiveEntries(archive:String, entries:Array<String>):Void
+	{
+		if (commandExists("zip"))
+		{
+			System.runCommand("", "zip", ["-q", "-d", archive].concat(entries));
+			return;
+		}
+		var sevenZip = resolveSevenZip();
+		if (sevenZip != null)
+		{
+			System.runCommand("", sevenZip, ["d", "-tzip", "-bso0", "-bsp0", archive].concat(entries));
+			return;
+		}
+		Log.error("-teavm: neither `zip` nor 7-Zip was found, so the classes shadowed by the maven module cannot be "
+			+ "removed from " + Path.withoutDirectory(archive) + ". Install one of them (Windows ships neither; "
+			+ "`choco install zip`, or 7-Zip).");
+	}
+
+	private function pruneClassFiles(dir:String):Void
+	{
+		for (entry in FileSystem.readDirectory(dir))
+		{
+			var path = dir + "/" + entry;
+			if (FileSystem.isDirectory(path))
+			{
+				pruneClassFiles(path);
+				if (FileSystem.readDirectory(path).length == 0) FileSystem.deleteDirectory(path);
+			}
+			else if (StringTools.endsWith(entry, ".class"))
+			{
+				FileSystem.deleteFile(path);
+			}
+		}
+	}
+
+	private function mavenCommand():String
+	{
+		return (Sys.systemName() == "Windows") ? "mvn.cmd" : "mvn";
+	}
+
+	private function resolveSevenZip():String
+	{
+		if (commandExists("7z")) return "7z";
+		for (candidate in ["C:\\Program Files\\7-Zip\\7z.exe", "C:\\Program Files (x86)\\7-Zip\\7z.exe"])
+		{
+			if (FileSystem.exists(candidate)) return candidate;
+		}
+		return null;
 	}
 
 	private function listFilesRecursive(base:String, rel:String, out:Array<String>):Void
