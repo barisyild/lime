@@ -4,8 +4,9 @@
 	shallow = true
 [submodule "project/lib/sdl"]
 	path = project/lib/sdl
-	url = https://github.com/libsdl-org/SDL
+	url = https://github.com/barisyild/SDL
 	shallow = true
+	branch = uiscene-2.30.12
 [submodule "project/lib/openal"]
 	path = project/lib/openal
 	url = https://github.com/kcat/openal-soft
